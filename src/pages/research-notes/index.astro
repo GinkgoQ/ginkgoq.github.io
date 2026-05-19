@@ -1,0 +1,74 @@
+---
+import { getCollection } from "astro:content";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+
+const posts = await getCollection("research", ({ data }) => !data.draft);
+posts.sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
+---
+
+<BaseLayout title="Research Notes — GinkgoQ" description="Technical notes, research observations, and AI system analysis from GinkgoQ.">
+  <section class="container listing">
+    <h1>Research Notes</h1>
+    <p>Technical notes, paper observations, experiments, and AI system analysis.</p>
+
+    <div class="items">
+      {posts.map((post) => (
+        <a class="item" href={`/research-notes/${post.id.replace(/\.mdx?$/, "")}/`}>
+          <span>{post.data.category}</span>
+          <h2>{post.data.title}</h2>
+          <p>{post.data.description}</p>
+        </a>
+      ))}
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .listing {
+    padding: 72px 0 96px;
+  }
+
+  h1 {
+    margin: 0;
+    font-size: clamp(2.4rem, 4vw, 4.5rem);
+    line-height: 1;
+    letter-spacing: -0.06em;
+  }
+
+  .listing > p {
+    max-width: 620px;
+    color: var(--color-muted);
+    font-size: 1.15rem;
+  }
+
+  .items {
+    margin-top: 3rem;
+    border-top: 1px solid var(--color-line);
+  }
+
+  .item {
+    display: block;
+    padding: 1.8rem 0;
+    border-bottom: 1px solid var(--color-line);
+    text-decoration: none;
+  }
+
+  .item span {
+    color: var(--color-accent);
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    font-size: 0.8rem;
+    font-weight: 800;
+  }
+
+  .item h2 {
+    margin: 0.4rem 0;
+    letter-spacing: -0.04em;
+  }
+
+  .item p {
+    max-width: 720px;
+    margin: 0;
+    color: var(--color-muted);
+  }
+</style>

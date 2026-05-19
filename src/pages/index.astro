@@ -1,0 +1,250 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import GinkgoSignalGraphic from "../components/GinkgoSignalGraphic.astro";
+import SectionCard from "../components/SectionCard.astro";
+
+const sections = [
+  {
+    title: "Speechline",
+    description: "Persian speech datasets, ASR / STT, TTS, and evaluation tools.",
+    icon: "⌁",
+    href: "/speechline/",
+  },
+  {
+    title: "AI Systems",
+    description: "RAG, agents, backend systems, pipelines, and production infrastructure.",
+    icon: "▱",
+    href: "/engineering/",
+  },
+  {
+    title: "Intelligence from Data",
+    description: "Document understanding, vision systems, structured extraction, and more.",
+    icon: "▤",
+    href: "/blog/",
+  },
+  {
+    title: "Healthcare & Pharma AI",
+    description: "Clinical workflows, HITL systems, auditability, and decision support.",
+    icon: "□",
+    href: "/healthcare-pharma-ai/",
+  },
+];
+
+const posts = [
+  {
+    date: "May 12, 2026",
+    category: "Research Note",
+    title: "Why real-world AI systems need more than models",
+    description: "Thoughts on evaluation, reliability, and the gap between benchmarks and production.",
+    read: "6 min read",
+    image: "/images/posts/ai-systems.png",
+  },
+  {
+    date: "May 8, 2026",
+    category: "Speechline",
+    title: "Building a Persian speech AI stack",
+    description: "Our approach to datasets, annotation, and robust ASR for Persian and regional languages.",
+    read: "8 min read",
+    image: "/images/posts/speechline.png",
+  },
+  {
+    date: "May 4, 2026",
+    category: "Engineering",
+    title: "From RAG to domain intelligence",
+    description: "Moving beyond retrieval: extraction, validation, reasoning, and workflow integration.",
+    read: "7 min read",
+    image: "/images/posts/rag.png",
+  },
+];
+---
+
+<BaseLayout title="GinkgoQ — Deep-tech AI for real-world systems" description="GinkgoQ builds practical AI systems across speech, healthcare, vision, documents, agents, datasets, and more.">
+  <section class="hero container">
+  <div class="hero-copy">
+    <p class="eyebrow">GINKGOQ</p>
+    <h1>Deep-tech AI for real-world systems.</h1>
+    <p class="lead">
+      We build practical AI systems across speech, healthcare, vision, documents,
+      agents, datasets, and more.
+    </p>
+    <a class="hero-link" href="/blog/">Explore our work →</a>
+  </div>
+
+  <GinkgoSignalGraphic />
+</section>
+
+  <section class="sections container" aria-label="GinkgoQ sections">
+    {sections.map((section) => <SectionCard {...section} />)}
+  </section>
+
+  <section class="latest container">
+    <div class="section-heading">
+      <h2>Latest from GinkgoQ</h2>
+      <a href="/blog/">View all posts →</a>
+    </div>
+
+    <div class="post-list">
+      {posts.map((post) => (
+        <article class="post-row">
+          <div>
+            <p class="post-meta">{post.date} <span>{post.category}</span></p>
+            <h3>{post.title}</h3>
+            <p>{post.description}</p>
+            <small>{post.read}</small>
+          </div>
+          <img src={post.image} alt="" />
+        </article>
+      ))}
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .hero {
+    display: grid;
+    grid-template-columns: 1fr 0.95fr;
+    gap: 4rem;
+    align-items: center;
+    padding: 96px 0 76px;
+  }
+
+  .eyebrow {
+    color: var(--color-accent);
+    font-size: 0.92rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    margin: 0 0 1.4rem;
+  }
+
+  h1 {
+    margin: 0;
+    max-width: 560px;
+    font-size: clamp(3rem, 5.2vw, 5.9rem);
+    line-height: 0.98;
+    letter-spacing: -0.065em;
+  }
+
+  .lead {
+    max-width: 620px;
+    margin: 1.8rem 0 1.4rem;
+    font-size: 1.18rem;
+    color: var(--color-muted);
+  }
+
+  .hero-link {
+    color: var(--color-accent);
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  .sections {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 3.2rem;
+    padding: 38px 0;
+    border-top: 1px solid var(--color-line);
+    border-bottom: 1px solid var(--color-line);
+  }
+
+  .latest {
+    padding: 54px 0 74px;
+  }
+
+  .section-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+
+  .section-heading h2 {
+    margin: 0;
+    font-size: 1.7rem;
+    letter-spacing: -0.04em;
+  }
+
+  .section-heading a {
+    color: var(--color-accent);
+    font-weight: 600;
+    font-size: 0.92rem;
+    text-decoration: none;
+  }
+
+  .post-list {
+    display: grid;
+    gap: 0;
+  }
+
+  .post-row {
+    display: grid;
+    grid-template-columns: 1fr 280px;
+    gap: 2rem;
+    align-items: center;
+    padding: 1.7rem 0;
+    border-top: 1px solid var(--color-line);
+  }
+
+  .post-meta {
+    margin: 0 0 0.4rem;
+    color: var(--color-muted);
+    font-size: 0.86rem;
+  }
+
+  .post-meta span {
+    margin-left: 1rem;
+    color: var(--color-accent);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 700;
+  }
+
+  .post-row h3 {
+    margin: 0 0 0.4rem;
+    font-size: 1.32rem;
+    letter-spacing: -0.035em;
+  }
+
+  .post-row p {
+    margin: 0 0 0.5rem;
+    color: var(--color-muted);
+    max-width: 620px;
+  }
+
+  .post-row small {
+    color: var(--color-text);
+  }
+
+  .post-row img {
+    width: 100%;
+    aspect-ratio: 16 / 7.8;
+    object-fit: cover;
+    border-radius: var(--radius-sm);
+    background: #101114;
+  }
+
+  @media (max-width: 980px) {
+    .hero {
+      grid-template-columns: 1fr;
+      padding-top: 64px;
+    }
+
+    .sections {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    .post-row {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .sections {
+      grid-template-columns: 1fr;
+    }
+
+    h1 {
+      font-size: 3.4rem;
+    }
+  }
+</style>

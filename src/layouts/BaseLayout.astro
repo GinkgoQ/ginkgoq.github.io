@@ -1,0 +1,61 @@
+---
+import "../styles/global.css";
+import "../styles/typography.css";
+import Header from "../components/Header.astro";
+
+type Props = {
+  title: string;
+  description: string;
+};
+
+const { title, description } = Astro.props;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="description" content={description} />
+    <meta name="viewport" content="width=device-width" />
+    <meta name="generator" content={Astro.generator} />
+    <title>{title}</title>
+
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content={Astro.url} />
+    <meta property="og:image" content="/images/og-default.png" />
+
+    <link rel="icon" href="/favicon.svg" />
+    <link rel="canonical" href={Astro.url} />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <div class="page-shell">
+      <div class="card-shell">
+        <Header />
+        <main id="main">
+          <slot />
+        </main>
+      </div>
+    </div>
+  </body>
+</html>
+
+<style>
+  .skip-link {
+    position: absolute;
+    left: 1rem;
+    top: 1rem;
+    z-index: 100;
+    transform: translateY(-200%);
+    padding: 0.75rem 1rem;
+    background: var(--color-text);
+    color: white;
+    border-radius: var(--radius-sm);
+  }
+
+  .skip-link:focus {
+    transform: translateY(0);
+  }
+</style>

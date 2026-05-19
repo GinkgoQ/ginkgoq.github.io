@@ -1,0 +1,107 @@
+---
+import BaseLayout from "./BaseLayout.astro";
+import ArticleTOC from "../components/ArticleTOC.astro";
+
+type Props = {
+  title: string;
+  description: string;
+  category: string;
+  date: Date;
+  tags?: string[];
+  headings?: { depth: number; slug: string; text: string }[];
+};
+
+const { title, description, category, date, tags = [], headings = [] } = Astro.props;
+const formattedDate = new Intl.DateTimeFormat("en", {
+  month: "long",
+  day: "numeric",
+  year: "numeric",
+}).format(date);
+---
+
+<BaseLayout title={`${title} — GinkgoQ`} description={description}>
+  <article class="article container">
+    <div class="article-main">
+      <a class="back" href="/research-notes/">← Back to Research Notes</a>
+
+      <header class="article-header">
+        <p class="eyebrow">{category}</p>
+        <h1>{title}</h1>
+        <p class="dek">{description}</p>
+
+        <div class="meta">
+          <span>{formattedDate}</span>
+          <span>7 min read</span>
+          {tags[0] && <span>{tags[0]}</span>}
+        </div>
+      </header>
+
+      <div class="prose">
+        <slot />
+      </div>
+    </div>
+
+    <ArticleTOC headings={headings} />
+  </article>
+</BaseLayout>
+
+<style>
+  .article {
+    display: grid;
+    grid-template-columns: minmax(0, 760px) 260px;
+    gap: 6rem;
+    padding: 70px 0 96px;
+  }
+
+  .back {
+    display: inline-block;
+    margin-bottom: 4rem;
+    color: var(--color-accent);
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  .eyebrow {
+    color: var(--color-accent);
+    font-size: 0.9rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .article-header h1 {
+    margin: 0;
+    font-size: clamp(2.25rem, 4vw, 4.2rem);
+    line-height: 1.02;
+    letter-spacing: -0.06em;
+  }
+
+  .dek {
+    max-width: 680px;
+    margin: 1.3rem 0 1.4rem;
+    color: var(--color-muted);
+    font-size: 1.22rem;
+    line-height: 1.55;
+  }
+
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.4rem;
+    color: var(--color-muted);
+    font-size: 0.92rem;
+    padding-bottom: 3rem;
+    border-bottom: 1px solid var(--color-line);
+  }
+
+  .prose {
+    padding-top: 2.5rem;
+  }
+
+  @media (max-width: 1040px) {
+    .article {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

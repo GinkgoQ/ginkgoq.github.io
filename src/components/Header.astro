@@ -1,0 +1,103 @@
+---
+const links = [
+  { href: "/blog/", label: "Blog" },
+  { href: "/research-notes/", label: "Research Notes" },
+  { href: "/speechline/", label: "Speechline" },
+  { href: "/engineering/", label: "Engineering" },
+  { href: "/healthcare-pharma-ai/", label: "Healthcare & Pharma AI" },
+  { href: "/about/", label: "About" },
+];
+---
+
+<header class="site-header">
+  <a class="brand" href="/" aria-label="GinkgoQ home">
+    <span class="brand-mark" aria-hidden="true">
+      <svg viewBox="0 0 32 32" role="img">
+        <path d="M25.7 5.9C17.4 5.7 9.5 10.8 6.4 18.5c5.7-2.7 11.6-3.5 17.8-2.6-5.2 1.2-9.9 3.5-14 7.2 6.7 1.6 13.2-1.7 16.4-7.7 1.8-3.4 1.7-6.8-.9-9.5Z" fill="currentColor" />
+      </svg>
+    </span>
+    <span>GINKGOQ</span>
+  </a>
+
+  <nav class="nav" aria-label="Main navigation">
+    {links.map((link) => <a href={link.href}>{link.label}</a>)}
+  </nav>
+
+  <button class="search" aria-label="Search">
+    <svg viewBox="0 0 24 24" role="img">
+      <path d="M10.8 18a7.2 7.2 0 1 1 5.1-2.1l4.1 4.1-.9.9-4.1-4.1A7.17 7.17 0 0 1 10.8 18Zm0-1.3a5.9 5.9 0 1 0 0-11.8 5.9 5.9 0 0 0 0 11.8Z" fill="currentColor" />
+    </svg>
+  </button>
+</header>
+
+<style>
+  .site-header {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    padding: 28px 52px;
+  }
+
+  .brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: 0.95rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-decoration: none;
+    margin-right: auto;
+  }
+
+  .brand-mark {
+    width: 26px;
+    height: 26px;
+    color: var(--color-text);
+  }
+
+  .nav {
+    display: flex;
+    align-items: center;
+    gap: 1.65rem;
+    font-size: 0.82rem;
+    font-weight: 560;
+  }
+
+  .nav a {
+    text-decoration: none;
+    color: var(--color-text);
+  }
+
+  .nav a:hover {
+    color: var(--color-accent);
+  }
+
+  .search {
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    border: 0;
+    background: transparent;
+    color: var(--color-text);
+    cursor: pointer;
+  }
+
+  .search svg {
+    width: 19px;
+  }
+
+  @media (max-width: 980px) {
+    .site-header {
+      padding: 24px;
+      flex-wrap: wrap;
+    }
+
+    .nav {
+      order: 3;
+      width: 100%;
+      overflow-x: auto;
+      padding-bottom: 0.4rem;
+    }
+  }
+</style>

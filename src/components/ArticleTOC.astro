@@ -1,0 +1,68 @@
+---
+type Heading = {
+  depth: number;
+  slug: string;
+  text: string;
+};
+
+type Props = {
+  headings: Heading[];
+};
+
+const { headings = [] } = Astro.props;
+const items = headings.filter((heading) => heading.depth === 2 || heading.depth === 3);
+---
+
+<aside class="toc" aria-label="Table of contents">
+  <h2>On this page</h2>
+  <ol>
+    {items.map((item) => (
+      <li class={`depth-${item.depth}`}>
+        <a href={`#${item.slug}`}>{item.text}</a>
+      </li>
+    ))}
+  </ol>
+</aside>
+
+<style>
+  .toc {
+    position: sticky;
+    top: 2rem;
+    align-self: start;
+    font-size: 0.9rem;
+  }
+
+  .toc h2 {
+    margin: 0 0 1rem;
+    font-size: 0.95rem;
+  }
+
+  .toc ol {
+    margin: 0;
+    padding-left: 1.1rem;
+    color: var(--color-muted);
+  }
+
+  .toc li {
+    margin: 0.55rem 0;
+  }
+
+  .toc a {
+    color: var(--color-muted);
+    text-decoration: none;
+  }
+
+  .toc a:hover {
+    color: var(--color-accent);
+  }
+
+  .depth-3 {
+    margin-left: 0.8rem;
+  }
+
+  @media (max-width: 1040px) {
+    .toc {
+      display: none;
+    }
+  }
+</style>
