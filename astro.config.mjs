@@ -3,5 +3,5 @@ import mdx from "@astrojs/mdx";
 
 export default defineConfig({
   site: "https://ginkgoq.github.io",
-  integrations: [mdx()],
+  integrations: [mdx(), sitemap()],
 });
