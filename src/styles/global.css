@@ -42,6 +42,16 @@ img, svg {
   display: block;
 }
 
+.brand-word {
+  display: inline;
+}
+
+.brand-word .brand-q {
+  color: var(--color-theme-green);
+  font-weight: 700;
+  
+}
+
 .skip-link {
   position: absolute; top: 1rem; left: 1rem; z-index: 300;
   padding: 0.6rem 1rem; background: var(--color-accent); color: #fff;

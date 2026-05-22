@@ -116,7 +116,7 @@ const allTags = Array.from(
             <div class="posts-list">
               {archivePosts.length > 0 ? (
                 archivePosts.map((post) => (
-                  <article class="post-row">
+                  <article class="post-row" data-category={post.data.category} data-tags={(post.data.tags ?? []).join(",")}>
                     <a href={`/blog/${getSlug(post.id)}/`}>
                       <div class="post-content">
                         <p class="post-meta">
@@ -213,6 +213,54 @@ const allTags = Array.from(
     )
   }
 </BaseLayout>
+
+<script type="module">
+  const params = new URLSearchParams(location.search);
+  const selectedCategory = params.get('category')?.trim().toLowerCase();
+  const selectedTag = params.get('tag')?.trim().toLowerCase();
+  const postRows = Array.from(document.querySelectorAll('.post-row'));
+  const countEl = document.querySelector('.count');
+  const filterLabel = selectedCategory ? `Category: ${selectedCategory}` : selectedTag ? `Topic: ${selectedTag}` : null;
+
+  function updateBlogFilter() {
+    let visibleCount = 0;
+    postRows.forEach((post) => {
+      const category = post.dataset.category?.toLowerCase() || '';
+      const tags = post.dataset.tags?.toLowerCase().split(',') || [];
+      const matchesCategory = selectedCategory ? category === selectedCategory : true;
+      const matchesTag = selectedTag ? tags.includes(selectedTag) : true;
+      const isVisible = matchesCategory && matchesTag;
+      post.style.display = isVisible ? '' : 'none';
+      if (isVisible) visibleCount += 1;
+    });
+
+    if (countEl) {
+      countEl.textContent = `${visibleCount} post${visibleCount === 1 ? '' : 's'}`;
+    }
+
+    if (filterLabel && visibleCount === 0) {
+      const empty = document.createElement('p');
+      empty.className = 'empty-small';
+      empty.textContent = 'No posts match this filter. Try another topic or category.';
+      const postsList = document.querySelector('.posts-list');
+      if (postsList) {
+        postsList.innerHTML = '';
+        postsList.appendChild(empty);
+      }
+    }
+  }
+
+  if (filterLabel) {
+    const heading = document.querySelector('.blog-grid-section .section-heading');
+    if (heading) {
+      const badge = document.createElement('p');
+      badge.className = 'archive-filter';
+      badge.textContent = `Filtered by ${filterLabel}`;
+      heading.appendChild(badge);
+    }
+    updateBlogFilter();
+  }
+</script>
 
 <style>
   .blog-hero {
@@ -313,6 +361,13 @@ const allTags = Array.from(
     font-size: clamp(1.65rem, 2.2vw, 2.3rem);
     line-height: 1.1;
     letter-spacing: -0.045em;
+  }
+
+  .archive-filter {
+    margin: 0.5rem 0 0;
+    color: var(--color-accent);
+    font-size: 0.88rem;
+    font-weight: 700;
   }
 
   .count {

@@ -1,12 +1,18 @@
 ---
 import { navLinks } from "../site/navigation";
 import { siteConfig } from "../config/site.config";
+import BrandText from "./BrandText.astro";
 
 const footerLinks = [
   ...navLinks,
   { href: '/rss.xml', label: 'RSS' },
   { href: siteConfig.contact.mailto, label: siteConfig.footer.contactLinkLabel },
 ];
+
+// Split navigation links into two columns
+const midPoint = Math.ceil(footerLinks.length / 2);
+const footerLinksCol1 = footerLinks.slice(0, midPoint);
+const footerLinksCol2 = footerLinks.slice(midPoint);
 
 const socialSvg = (type: string) => {
   if (type === "github") {
@@ -46,7 +52,7 @@ const socialSvg = (type: string) => {
           <span class="brand-mark" aria-hidden="true">
             <img class="brand-logo" src={siteConfig.brand.logoPath} alt={siteConfig.brand.logoAlt} />
           </span>
-          <span>{siteConfig.brand.label}</span>
+          <BrandText text={siteConfig.brand.label} />
         </a>
         <p class="footer-brand-desc">{siteConfig.footer.description}</p>
         <div class="footer-social" aria-label="Social links">
@@ -62,7 +68,14 @@ const socialSvg = (type: string) => {
       <div class="footer-col">
         <span class="footer-col-heading">Navigate</span>
         <ul class="footer-nav-list">
-          {footerLinks.map((link) => <li><a href={link.href}>{link.label}</a></li>)}
+          {footerLinksCol1.map((link) => <li><a href={link.href}>{link.label}</a></li>)}
+        </ul>
+      </div>
+
+      <div class="footer-col">
+        <span class="footer-col-heading" style="visibility: hidden;">Navigate</span>
+        <ul class="footer-nav-list">
+          {footerLinksCol2.map((link) => <li><a href={link.href}>{link.label}</a></li>)}
         </ul>
       </div>
 
@@ -96,61 +109,64 @@ const socialSvg = (type: string) => {
 
   .footer-inner {
     display: grid;
-    grid-template-columns: 1.5fr 1fr 1.1fr;
-    gap: 3rem 4.5rem;
-    padding: 4rem 0 3rem;
+    grid-template-columns: 1.8fr 0.5fr 1fr 1.2fr;
+    gap: 2.4rem 1.2rem;
+    padding: 3.2rem 0 2.4rem;
   }
 
   .footer-brand-link {
     display: inline-flex;
     align-items: center;
-    gap: 0.55rem;
-    margin-bottom: 1.1rem;
+    gap: 0.6rem;
+    margin-bottom: 0.9rem;
     color: var(--color-text);
-    font-size: 0.9rem;
-    font-weight: 700;
-    letter-spacing: 0.14em;
+    font-size: 0.95rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
     text-decoration: none;
+    transition: opacity 140ms;
+  }
+
+  .footer-brand-link:hover {
+    opacity: 0.8;
   }
 
   .footer-brand-link .brand-mark {
-    width: 22px;
-    height: 22px;
+    width: 29px;
+    height: 29px;
+    flex-shrink: 0;
+    background: var(--color-theme-green);
+    -webkit-mask: url("/favicon.svg") center / contain no-repeat;
+    mask: url("/favicon.svg") center / contain no-repeat;
   }
 
   .footer-brand-link .brand-mark img {
-    width: 100%;
-    height: 100%;
-    display: block;
-    transition: filter 180ms ease;
-  }
-
-  :global([data-theme="dark"]) .footer-brand-link .brand-mark img {
-    filter: invert(1) brightness(1.1);
+    display: none;
   }
 
   .footer-brand-desc {
-    max-width: 290px;
-    margin: 0 0 1.8rem;
+    max-width: 280px;
+    margin: 0 0 1.5rem;
     color: var(--color-muted);
-    font-size: 0.88rem;
-    line-height: 1.75;
+    font-size: 0.86rem;
+    line-height: 1.7;
   }
 
   .footer-social {
     display: flex;
-    gap: 0.4rem;
+    gap: 0.5rem;
   }
 
   .footer-social-link {
     display: grid;
     place-items: center;
-    width: 32px;
-    height: 32px;
+    width: 34px;
+    height: 34px;
     color: var(--color-muted);
     border: 1px solid var(--color-line);
     border-radius: var(--radius-sm);
     text-decoration: none;
+    font-weight: 600;
     transition: color 140ms, border-color 140ms, background-color 140ms;
   }
 
@@ -162,17 +178,18 @@ const socialSvg = (type: string) => {
 
   .footer-col-heading {
     display: block;
-    margin: 0 0 1.2rem;
-    color: var(--color-subtle);
-    font-size: 0.68rem;
-    font-weight: 800;
-    letter-spacing: 0.11em;
+    margin: 0 0 1rem;
+    color: var(--color-text);
+    font-size: 0.72rem;
+    font-weight: 900;
+    letter-spacing: 0.13em;
     text-transform: uppercase;
+    opacity: 0.7;
   }
 
   .footer-nav-list {
     display: grid;
-    gap: 0.7rem;
+    gap: 0.6rem;
     margin: 0;
     padding: 0;
     list-style: none;
@@ -180,7 +197,8 @@ const socialSvg = (type: string) => {
 
   .footer-nav-list a {
     color: var(--color-muted);
-    font-size: 0.88rem;
+    font-size: 0.86rem;
+    font-weight: 500;
     text-decoration: none;
     transition: color 140ms;
   }
@@ -192,16 +210,17 @@ const socialSvg = (type: string) => {
   .footer-tag-cloud {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.4rem;
+    gap: 0.45rem;
   }
 
   .footer-tag-cloud a {
     display: inline-block;
-    padding: 0.2rem 0.56rem;
+    padding: 0.28rem 0.6rem;
     color: var(--color-muted);
     border: 1px solid var(--color-line);
     border-radius: 999px;
-    font-size: 0.74rem;
+    font-size: 0.73rem;
+    font-weight: 500;
     text-decoration: none;
     transition: color 140ms, border-color 140ms, background-color 140ms;
   }
@@ -214,6 +233,7 @@ const socialSvg = (type: string) => {
 
   .footer-bottom {
     border-top: 1px solid var(--color-line);
+    background: var(--color-surface-alt, rgba(255, 255, 255, 0.02));
     transition: border-color 240ms var(--ease);
   }
 
@@ -222,27 +242,16 @@ const socialSvg = (type: string) => {
     align-items: center;
     justify-content: space-between;
     gap: 1.5rem;
-    padding: 1.25rem 0;
+    padding: 1rem 0;
     color: var(--color-subtle);
-    font-size: 0.78rem;
+    font-size: 0.77rem;
+    font-weight: 500;
   }
 
   .footer-bottom-inner a {
     color: inherit;
     text-decoration: none;
     transition: color 140ms;
-  }
-
-  .sr-only {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border: 0;
   }
 
   .footer-bottom-inner a:hover {
@@ -260,9 +269,21 @@ const socialSvg = (type: string) => {
     user-select: none;
   }
 
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
   @media (max-width: 860px) {
     .footer-inner {
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: 1fr 1fr 1fr;
     }
 
     .footer-brand {

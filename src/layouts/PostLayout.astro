@@ -12,9 +12,10 @@ type Props = {
   headings?: { depth: number; slug: string; text: string }[];
   image?: string;
   updated?: Date;
+  readingTime: string;
 };
 
-const { title, description, category, date, tags = [], headings = [], image, updated } = Astro.props;
+const { title, description, category, date, tags = [], headings = [], image, updated, readingTime } = Astro.props;
 const formattedDate = new Intl.DateTimeFormat("en", {
   month: "long",
   day: "numeric",
@@ -76,7 +77,7 @@ const blogPostingSchema = {
 
         <div class="article-meta">
           <time datetime={date.toISOString()}>{formattedDate}</time>
-          <span>7 min read</span>
+          <span>{readingTime}</span>
           {tags.slice(0, 3).map((tag) => <span class="tag-pill">{tag}</span>)}
         </div>
       </header>

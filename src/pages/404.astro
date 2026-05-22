@@ -1,0 +1,53 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { siteConfig } from "../config/site.config";
+---
+
+<BaseLayout
+  title={`Page not found — ${siteConfig.brand.name}`}
+  description="The page you requested could not be found on GinkgoQ."
+>
+  <section class="not-found container">
+    <div class="not-found-inner">
+      <p class="eyebrow">404</p>
+      <h1>Page not found</h1>
+      <p>We couldn't find the page you were looking for. Try returning home or use the site search to find what you need.</p>
+      <a class="button" href="/">Back to home</a>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .not-found {
+    min-height: calc(100vh - 80px);
+    display: grid;
+    place-items: center;
+    padding: 5rem 0;
+  }
+  .not-found-inner {
+    max-width: 640px;
+    text-align: center;
+  }
+  .not-found h1 {
+    margin: 0;
+    font-size: clamp(3rem, 6vw, 4.5rem);
+    line-height: 0.96;
+  }
+  .not-found p {
+    color: var(--color-muted);
+    font-size: 1.05rem;
+    line-height: 1.8;
+  }
+  .button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 1.8rem;
+    padding: 0.95rem 1.5rem;
+    border-radius: var(--radius-md);
+    color: white;
+    background: var(--color-accent);
+    text-decoration: none;
+    font-weight: 700;
+  }
+</style>

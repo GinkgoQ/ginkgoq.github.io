@@ -1,0 +1,15 @@
+---
+type Props = {
+  text?: string;
+};
+
+const { text = "GinkgoQ" } = Astro.props;
+const qIndex = text.toLowerCase().lastIndexOf("q");
+const chars = Array.from(text);
+---
+
+<span class="brand-word" aria-label={text}>
+  {chars.map((char, index) => (
+    <span class:list={[index === qIndex && "brand-q"]} aria-hidden="true">{char}</span>
+  ))}
+</span>

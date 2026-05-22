@@ -1,6 +1,9 @@
 ---
 import { getCollection, render } from "astro:content";
+import fs from "node:fs/promises";
+import path from "node:path";
 import PostLayout from "../../layouts/PostLayout.astro";
+import readingTime from "reading-time";
 
 export async function getStaticPaths() {
   const posts = await getCollection("blog", ({ data }) => !data.draft);
@@ -12,6 +15,23 @@ export async function getStaticPaths() {
 }
 
 const { post } = Astro.props;
+const sourceBase = path.join(process.cwd(), "src", "content", "blog", post.id);
+const candidates = [`${sourceBase}.mdx`, `${sourceBase}.md`];
+let sourcePath = "";
+for (const candidate of candidates) {
+  try {
+    await fs.access(candidate);
+    sourcePath = candidate;
+    break;
+  } catch {
+    // try next candidate
+  }
+}
+if (!sourcePath) {
+  throw new Error(`Unable to locate source file for blog post "${post.id}"`);
+}
+const rawSource = await fs.readFile(sourcePath, "utf-8");
+const readingTimeText = readingTime(rawSource).text;
 const { Content, headings } = await render(post);
 ---
 
@@ -22,6 +42,7 @@ const { Content, headings } = await render(post);
   date={post.data.date}
   tags={post.data.tags}
   headings={headings}
+  readingTime={readingTimeText}
 >
   <Content />
 </PostLayout>

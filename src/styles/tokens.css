@@ -1,6 +1,8 @@
 :root {
   color-scheme: light;
 
+  --color-theme-green:  #79863c;
+
   /* Surfaces */
   --color-bg:           #f8f8f5;
   --color-surface:      #ffffff;
@@ -16,11 +18,11 @@
   --color-line:         #d8d8cf;
   --color-soft:         #e7e7df;
 
-  /* Accent — blue */
-  --color-accent:       #3047d5;
-  --color-accent-hover: #2438b8;
-  --color-accent-soft:  #eef1ff;
-  --color-accent-muted: rgb(48 71 213 / 0.10);
+  /* Accent — ginkgo green */
+  --color-accent:       var(--color-theme-green);
+  --color-accent-hover: #667231;
+  --color-accent-soft:  #edf1df;
+  --color-accent-muted: rgb(121 134 60 / 0.12);
 
   /* Code */
   --color-code-bg:      #13141d;
@@ -28,24 +30,24 @@
   --color-code-text:    #c8d0f5;
 
   /* Ginkgo SVG */
-  --ginkgo-grid:        #e4e7f6;
-  --ginkgo-node:        #33306f;
-  --ginkgo-outline:     #4c4a78;
-  --ginkgo-vein:        #737dde;
-  --ginkgo-stem:        #1f276f;
-  --ginkgo-fold:        #4c4a78;
-  --ginkgo-fill:        rgb(111 124 234 / 0.055);
-  --ginkgo-fill-edge:   rgb(76 74 120 / 0.04);
+  --ginkgo-grid:        #dfe6cc;
+  --ginkgo-node:        #79863c;
+  --ginkgo-outline:     #667231;
+  --ginkgo-vein:        #8f9a54;
+  --ginkgo-stem:        #596329;
+  --ginkgo-fold:        #707b35;
+  --ginkgo-fill:        rgb(121 134 60 / 0.075);
+  --ginkgo-fill-edge:   rgb(121 134 60 / 0.05);
 
   /* Home signal graphic */
-  --signal-grid:        #e4e7f6;
+  --signal-grid:        #dfe6cc;
   --signal-grid-opacity:0.84;
-  --signal-fiber:       #6f7cff;
-  --signal-light:       #7280ff;
-  --signal-node:        #33306f;
+  --signal-fiber:       #79863c;
+  --signal-light:       #aebd72;
+  --signal-node:        #79863c;
   --signal-hollow-fill: #ffffff;
   --signal-hollow-alpha:0.18;
-  --signal-glow:        #5364db;
+  --signal-glow:        #79863c;
   --signal-glow-start:  0.13;
   --signal-glow-mid:    0.035;
 
@@ -87,32 +89,32 @@
   --color-line:         #2a2f43;
   --color-soft:         #202433;
 
-  --color-accent:       #6278f5;
-  --color-accent-hover: #7a8ef8;
-  --color-accent-soft:  rgb(98 120 245 / 0.14);
-  --color-accent-muted: rgb(98 120 245 / 0.10);
+  --color-accent:       var(--color-theme-green);
+  --color-accent-hover: #9baa60;
+  --color-accent-soft:  rgb(121 134 60 / 0.18);
+  --color-accent-muted: rgb(121 134 60 / 0.14);
 
   --color-code-bg:      #0d0e18;
   --color-code-border:  #1c1e30;
   --color-code-text:    #c0caf5;
 
-  --ginkgo-grid:        #9ba4c9;
-  --ginkgo-node:        #747cf0;
-  --ginkgo-outline:     #8c93dc;
-  --ginkgo-vein:        #6f7cff;
-  --ginkgo-stem:        #9aa5ff;
-  --ginkgo-fold:        #a1a8e8;
-  --ginkgo-fill:        rgb(114 128 255 / 0.12);
-  --ginkgo-fill-edge:   rgb(114 128 255 / 0.07);
+  --ginkgo-grid:        #4e5829;
+  --ginkgo-node:        #a8b76d;
+  --ginkgo-outline:     #c4d18a;
+  --ginkgo-vein:        #a8b76d;
+  --ginkgo-stem:        #d5ddb1;
+  --ginkgo-fold:        #8f9c55;
+  --ginkgo-fill:        rgb(168 183 109 / 0.12);
+  --ginkgo-fill-edge:   rgb(168 183 109 / 0.07);
 
-  --signal-grid:        #a9afc8;
+  --signal-grid:        #a8b76d;
   --signal-grid-opacity:0.76;
-  --signal-fiber:       #7d8cff;
-  --signal-light:       #8391ff;
-  --signal-node:        #5d63c9;
+  --signal-fiber:       #a8b76d;
+  --signal-light:       #d4df9c;
+  --signal-node:        #a8b76d;
   --signal-hollow-fill: #151720;
   --signal-hollow-alpha:0.38;
-  --signal-glow:        #6373ff;
+  --signal-glow:        #a8b76d;
   --signal-glow-start:  0.16;
   --signal-glow-mid:    0.055;
 }
