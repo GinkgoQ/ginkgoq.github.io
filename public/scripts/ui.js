@@ -1,29 +1,7 @@
 (function () {
   'use strict';
 
-  const POSTS = [
-    {
-      href: '/research-notes/from-rag-to-domain-intelligence/',
-      date: 'May 4, 2026',
-      cat: 'Research Note',
-      title: 'From RAG to Domain Intelligence',
-      desc: 'Moving beyond retrieval: extraction, validation, reasoning, and workflow integration.',
-    },
-    {
-      href: '/blog/why-real-world-ai-systems-need-more-than-models/',
-      date: 'May 12, 2026',
-      cat: 'Research Note',
-      title: 'Why real-world AI systems need more than models',
-      desc: 'On evaluation, reliability, and the gap between benchmarks and production.',
-    },
-    {
-      href: '/blog/building-reliable-ai-pipelines-for-document-understanding/',
-      date: 'May 8, 2026',
-      cat: 'Engineering',
-      title: 'Building reliable AI pipelines for document understanding',
-      desc: 'How extraction, validation, and confidence scoring make document AI production-ready.',
-    },
-  ];
+  const POSTS = window.__SEARCH_POSTS__ || [];
 
   const html = document.documentElement;
   const btnTheme = document.getElementById('btn-theme');
@@ -54,15 +32,27 @@
     applyTheme(next);
   });
 
+  function normalizePath(path) {
+    return path.replace(/\/+/g, '/').replace(/(^\/|\/$)/g, '') || '/';
+  }
+
   function setActiveNavigation() {
-    const path = window.location.pathname;
-    const active = path.startsWith('/blog/') ? 'blog' : path.startsWith('/research-notes/') ? 'research-notes' : path.startsWith('/about/') ? 'about' : '';
+    const current = normalizePath(window.location.pathname);
+
     document.querySelectorAll('.site-nav a, .mobile-nav a').forEach((link) => {
-      const id = link.id?.replace('mnav-', '').replace('nav-', '');
-      link.classList.toggle('active', id === active && link.closest('.site-nav'));
-      link.classList.toggle('active-mobile', id === active && link.closest('.mobile-nav'));
+      const linkPath = normalizePath(new URL(link.href, window.location.origin).pathname);
+      const isHomeLink = linkPath === '/';
+      const isMatch = isHomeLink
+        ? current === '/'
+        : current === linkPath || current.startsWith(`${linkPath}/`);
+
+      link.classList.toggle('active', isMatch && link.closest('.site-nav'));
+      link.classList.toggle('active-mobile', isMatch && link.closest('.mobile-nav'));
     });
   }
+
+  setActiveNavigation();
+  window.addEventListener('popstate', setActiveNavigation);
 
   function closeMobileNav() {
     mobileNavEl?.classList.remove('open');
@@ -87,8 +77,8 @@
     const items = query
       ? POSTS.filter((post) =>
           post.title.toLowerCase().includes(query) ||
-          post.desc.toLowerCase().includes(query) ||
-          post.cat.toLowerCase().includes(query)
+          post.description.toLowerCase().includes(query) ||
+          post.category.toLowerCase().includes(query)
         )
       : POSTS;
 
@@ -107,9 +97,9 @@
       li.id = `sr-${index}`;
       li.innerHTML = `
         <a href="${post.href}" tabindex="-1">
-          <span class="sr-cat">${post.cat}</span>
+          <span class="sr-cat">${post.category}</span>
           <span class="sr-title">${post.title}</span>
-          <span class="sr-desc">${post.desc}</span>
+          <span class="sr-desc">${post.description}</span>
         </a>
       `;
       resultsList.appendChild(li);

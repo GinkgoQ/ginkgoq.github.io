@@ -1,25 +1,22 @@
 ---
-const links = [
-  { href: "/blog/", label: "Blog", id: "blog" },
-  { href: "/research-notes/", label: "Research Notes", id: "research-notes" },
-  { href: "/about/", label: "About", id: "about" },
-];
+import { navLinks as links } from "../site/navigation";
+import { siteConfig } from "../config/site.config";
 ---
 
 <header class="site-header" id="site-header" role="banner">
-  <a class="brand" href="/" aria-label="GinkgoQ — home">
+  <a class="brand" href={siteConfig.routes.home} aria-label={`${siteConfig.brand.name} — home`}>
     <span class="brand-mark" aria-hidden="true">
       <svg viewBox="0 0 32 32" width="26" height="26" fill="currentColor" aria-hidden="true">
         <path d="M25.7 5.9C17.4 5.7 9.5 10.8 6.4 18.5c5.7-2.7 11.6-3.5 17.8-2.6-5.2 1.2-9.9 3.5-14 7.2 6.7 1.6 13.2-1.7 16.4-7.7 1.8-3.4 1.7-6.8-.9-9.5Z" />
       </svg>
     </span>
-    <span>GINKGOQ</span>
+    <span>{siteConfig.brand.label}</span>
   </a>
 
   <div class="header-middle" role="presentation">
     <nav class="site-nav" id="site-nav" aria-label="Main navigation">
       {links.map((link) => (
-        <a href={link.href} id={`nav-${link.id}`}>{link.label}</a>
+        <a href={link.href}>{link.label}</a>
       ))}
     </nav>
 
@@ -30,7 +27,7 @@ const links = [
           type="search"
           id="search-input"
           class="search-input"
-          placeholder="Search posts and notes…"
+          placeholder={siteConfig.search.placeholder}
           autocomplete="off"
           autocorrect="off"
           spellcheck="false"
@@ -60,12 +57,12 @@ const links = [
       </svg>
     </button>
 
-    <button class="search-pill" id="btn-search-open" aria-label="Search (⌘K)" aria-expanded="false" aria-controls="search-results-panel" type="button">
+    <button class="search-pill" id="btn-search-open" aria-label={siteConfig.search.openButtonLabel} aria-expanded="false" aria-controls="search-results-panel" type="button">
       <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <circle cx="11" cy="11" r="8" />
         <line x1="21" y1="21" x2="16.65" y2="16.65" />
       </svg>
-      <span class="search-pill-label">Search</span>
+      <span class="search-pill-label">{siteConfig.search.buttonText}</span>
       <span class="search-kbd-hint" aria-hidden="true"><kbd>⌘</kbd><kbd>K</kbd></span>
     </button>
 
@@ -93,7 +90,7 @@ const links = [
 <div class="mobile-nav" id="mobile-nav" aria-hidden="true" aria-label="Mobile navigation">
   <div class="mobile-nav-inner">
     {links.map((link) => (
-      <a href={link.href} id={`mnav-${link.id}`}>{link.label}</a>
+      <a href={link.href}>{link.label}</a>
     ))}
   </div>
 </div>

@@ -1,12 +1,13 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
+import { siteConfig } from "../config/site.config";
 ---
 
-<BaseLayout title="About — GinkgoQ" description="Learn more about GinkgoQ's deep-tech AI work and mission.">
+<BaseLayout title={siteConfig.pages.about.title} description={siteConfig.pages.about.description}>
   <section class="about-hero container" aria-labelledby="about-heading">
     <span class="eyebrow">About</span>
     <h1 id="about-heading">We build practical AI for the real world.</h1>
-    <p class="about-lead">GinkgoQ is a deep-tech AI team working at the intersection of AI systems, domain intelligence, and language understanding. We focus on problems where retrieval, reasoning, and reliability actually matter.</p>
+    <p class="about-lead">{siteConfig.pages.about.lead}</p>
   </section>
 
   <section class="about-body container">
@@ -45,8 +46,8 @@ import BaseLayout from "../layouts/BaseLayout.astro";
         <h2>Get in touch</h2>
         <p>For collaborations, technical discussions, or questions about our work.</p>
       </div>
-      <a href="mailto:hello@ginkgoq.ai" class="contact-link" aria-label="Email GinkgoQ">
-        hello@ginkgoq.ai
+      <a href={siteConfig.contact.mailto} class="contact-link" aria-label={siteConfig.pages.about.contactBand.actionText}>
+        {siteConfig.pages.about.contactBand.actionText}
         <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M3 8h10M8 3l5 5-5 5" /></svg>
       </a>
     </div>
