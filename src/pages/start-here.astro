@@ -1,0 +1,107 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { siteConfig } from "../config/site.config";
+---
+
+<BaseLayout title="Start here — GinkgoQ" description="New to GinkgoQ? Learn what GinkgoQ is, why it exists, and where to begin reading.">
+  <section class="guide-hero container" aria-labelledby="start-here-heading">
+    <span class="eyebrow">Start here</span>
+    <h1 id="start-here-heading">What is GinkgoQ?</h1>
+    <p class="lead">GinkgoQ is a deep-tech AI publication and engineering practice focused on real-world systems, domain intelligence, and reliable production workflows.</p>
+  </section>
+
+  <section class="guide-body container">
+    <div class="guide-grid">
+      <div>
+        <h2>How GinkgoQ works</h2>
+        <p>We publish technical writing that bridges research and systems engineering. Our work is aimed at teams building retrieval augmented systems, speech and vision pipelines, domain-specific intelligence, and production-ready AI operations.</p>
+        <p>This site is organized into core content pillars: the blog for longform engineering and product thinking, research notes for experiments and observations, and public pages for releases, roadmap, and practical guidance.</p>
+      </div>
+
+      <div>
+        <h2>Where to start</h2>
+        <ul class="start-list">
+          <li><strong>What is GinkgoQ?</strong> — This page explains our mission and publishing approach.</li>
+          <li><strong>Blog</strong> — Read production-grade AI writing, build logs, and systems case studies.</li>
+          <li><strong>Research Notes</strong> — Explore focused experiments, paper notes, and system analysis.</li>
+        </ul>
+      </div>
+
+      <div>
+        <h2>How to read the site</h2>
+        <p>Each article includes a clear problem statement, technical context, and implementation notes. Look for the “References” section at the end of posts for source material and citations. Use the search bar to discover key topics like RAG, agents, datasets, and reliability.</p>
+      </div>
+
+      <div>
+        <h2>References and citations</h2>
+        <p>When authors include published sources or technical references, they should use a dedicated <code class="inline-code">References</code> section with an ordered list.</p>
+        <div class="references">
+          <h2>Reference pattern</h2>
+          <ol class="reference-list">
+            <li>Author Name. “Title of paper or source.” Publication, Year. <a href="#">https://example.com</a></li>
+            <li>Another Source. “Reference description.” Journal or post, Year. <a href="#">https://example.com</a></li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .guide-hero {
+    padding: 90px 0 50px;
+    border-bottom: 1px solid var(--color-line);
+    transition: border-color 240ms var(--ease);
+  }
+
+  .guide-hero h1 {
+    max-width: 760px;
+    margin: 1.1rem 0 1.4rem;
+    font-size: clamp(3rem, 5vw, 4.5rem);
+    line-height: 1.02;
+  }
+
+  .guide-body {
+    padding: 64px 0 96px;
+  }
+
+  .guide-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 3rem 4rem;
+  }
+
+  .guide-grid h2 {
+    margin-top: 0;
+    font-size: 1.3rem;
+  }
+
+  .start-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    gap: 0.95rem;
+  }
+
+  .start-list li {
+    padding-left: 1rem;
+    color: var(--color-muted);
+    line-height: 1.8;
+    border-left: 3px solid var(--color-accent-soft);
+  }
+
+  .inline-code {
+    font-family: var(--font-mono);
+    background: var(--color-surface-2);
+    padding: 0.15rem 0.35rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.95rem;
+  }
+
+  @media (max-width: 980px) {
+    .guide-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

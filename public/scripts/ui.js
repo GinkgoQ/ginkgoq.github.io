@@ -261,6 +261,29 @@
     });
   }
 
+  document.querySelectorAll('.prose h2[id], .prose h3[id]').forEach((heading) => {
+    const link = `#${heading.id}`;
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'heading-link';
+    button.setAttribute('aria-label', 'Copy link to section');
+    button.innerHTML = '<span aria-hidden="true">#</span><span class="sr-only">Copy section link</span>';
+    button.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(`${location.origin}${location.pathname}${link}`);
+        button.textContent = 'Copied';
+        button.classList.add('copied');
+        setTimeout(() => {
+          button.innerHTML = '<span aria-hidden="true">#</span><span class="sr-only">Copy section link</span>';
+          button.classList.remove('copied');
+        }, 1800);
+      } catch (e) {
+        console.error('Unable to copy section link', e);
+      }
+    });
+    heading.appendChild(button);
+  });
+
   setActiveNavigation();
   updateProgress();
 })();

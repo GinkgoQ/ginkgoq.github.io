@@ -185,6 +185,12 @@ const allTags = Array.from(
                 </section>
               )}
 
+              <section class="sidebar-block">
+                <h2>RSS feed</h2>
+                <p>Follow new posts and research notes with our RSS feed.</p>
+                <a class="sidebar-link" href="/rss.xml">Subscribe to RSS</a>
+              </section>
+
               <section class="sidebar-block note">
                 <h2>GinkgoQ writing</h2>
                 <p>
@@ -643,6 +649,18 @@ const allTags = Array.from(
   }
 
   .sidebar-block a:hover {
+    color: var(--color-accent);
+  }
+
+  .sidebar-link {
+    display: inline-flex;
+    margin-top: 0.75rem;
+    color: var(--color-accent);
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  .sidebar-link:hover {
     color: var(--color-accent);
   }
 

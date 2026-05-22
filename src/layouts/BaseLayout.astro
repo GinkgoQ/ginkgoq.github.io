@@ -5,11 +5,39 @@ import Header from "../components/Header.astro";
 import Footer from "../components/Footer.astro";
 import { getCollection } from "astro:content";
 import { siteConfig } from "../config/site.config";
-import { siteConfig } from "../config/site.config";
 
 type Props = {
   title: string;
   description: string;
+  pageImage?: string;
+  pageType?: string;
+  datePublished?: string;
+  dateModified?: string;
+};
+
+const { title, description, pageImage = "/images/og-default.png", pageType = "website", datePublished, dateModified } = Astro.props;
+const canonicalUrl = `${siteConfig.siteUrl}${Astro.url.pathname}`;
+const ogImage = pageImage.startsWith("http") ? pageImage : `${siteConfig.siteUrl}${pageImage}`;
+const organizationSchema = {
+  "@type": "Organization",
+  "@context": "https://schema.org",
+  name: siteConfig.publisher.name,
+  url: siteConfig.publisher.url,
+  logo: {
+    "@type": "ImageObject",
+    url: `${siteConfig.siteUrl}${siteConfig.publisher.logo}`,
+  },
+};
+
+const websiteSchema = {
+  "@type": "WebSite",
+  "@context": "https://schema.org",
+  url: siteConfig.siteUrl,
+  name: siteConfig.brand.name,
+  publisher: {
+    "@type": "Organization",
+    name: siteConfig.publisher.name,
+  },
 };
 
 const blogSearchPosts = (await getCollection("blog", ({ data }) => !data.draft)).map((post) => ({
@@ -35,8 +63,6 @@ const searchIndex = allSearchPosts.map((post) => ({
       ? `/blog/${post.id.replace(/\.mdx?$/, "")}/`
       : `/research-notes/${post.id.replace(/\.mdx?$/, "")}/`,
 }));
-
-const { title, description } = Astro.props;
 ---
 
 <!doctype html>
@@ -62,12 +88,19 @@ const { title, description } = Astro.props;
 
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
-    <meta property="og:type" content="website" />
-    <meta property="og:url" content={Astro.url} />
-    <meta property="og:image" content="/images/og-default.png" />
+    <meta property="og:type" content={pageType} />
+    <meta property="og:url" content={canonicalUrl} />
+    <meta property="og:image" content={ogImage} />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage} />
 
     <link rel="icon" href={siteConfig.external.favicon} />
-    <link rel="canonical" href={Astro.url} />
+    <link rel="canonical" href={canonicalUrl} />
+
+    <script type="application/ld+json" set:html={JSON.stringify([organizationSchema, websiteSchema])} />
 
     {siteConfig.external.preconnect.map((url) => (
       <link rel="preconnect" href={url} crossorigin={url.includes('fonts.gstatic.com') ? true : undefined} />

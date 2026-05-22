@@ -1,0 +1,99 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+---
+
+<BaseLayout title="Roadmap — GinkgoQ" description="Explore the public roadmap and build log for GinkgoQ's AI systems and publishing work.">
+  <section class="roadmap-hero container" aria-labelledby="roadmap-heading">
+    <span class="eyebrow">Roadmap</span>
+    <h1 id="roadmap-heading">Public roadmap and build log</h1>
+    <p class="lead">See what we’re building next, where our priorities are, and how our engineering work is progressing.</p>
+  </section>
+
+  <section class="roadmap-body container">
+    <div class="roadmap-grid">
+      <article class="roadmap-card">
+        <h2>Current focus</h2>
+        <ul>
+          <li>Improving AI pipelines for document understanding and real-world extraction.</li>
+          <li>Publishing more production case studies on RAG and agent systems.</li>
+          <li>Expanding our model evaluation and dataset tooling guidance.</li>
+        </ul>
+      </article>
+
+      <article class="roadmap-card">
+        <h2>Upcoming build log</h2>
+        <ul>
+          <li>Publishing a write-up for GinkgoQ's speech AI infrastructure.</li>
+          <li>Sharing a public note on knowledge-grounded retrieval patterns.</li>
+          <li>Rolling out new article metadata and citation formats.</li>
+        </ul>
+      </article>
+    </div>
+
+    <div class="roadmap-note">
+      <h2>How to follow progress</h2>
+      <p>Bookmark this page or subscribe with RSS to stay current with site updates and content releases. New roadmap items will be added as we publish more papers, posts, and technical notes.</p>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .roadmap-hero {
+    padding: 90px 0 50px;
+    border-bottom: 1px solid var(--color-line);
+  }
+
+  .roadmap-hero h1 {
+    max-width: 760px;
+    margin: 1.1rem 0 1.4rem;
+    font-size: clamp(3rem, 5vw, 4.2rem);
+    line-height: 1.02;
+  }
+
+  .roadmap-body {
+    padding: 64px 0 96px;
+    display: grid;
+    gap: 2.25rem;
+  }
+
+  .roadmap-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.75rem;
+  }
+
+  .roadmap-card {
+    padding: 2rem;
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-md);
+    background: var(--color-surface-2);
+  }
+
+  .roadmap-card h2 {
+    margin: 0 0 1rem;
+  }
+
+  .roadmap-card ul {
+    margin: 0;
+    padding-left: 1.1rem;
+    color: var(--color-muted);
+    line-height: 1.8;
+  }
+
+  .roadmap-note {
+    padding: 1.9rem 2rem;
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-md);
+    background: var(--color-surface-2);
+  }
+
+  .roadmap-note h2 {
+    margin-top: 0;
+  }
+
+  @media (max-width: 980px) {
+    .roadmap-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

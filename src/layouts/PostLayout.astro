@@ -1,6 +1,7 @@
 ---
 import BaseLayout from "./BaseLayout.astro";
 import ArticleTOC from "../components/ArticleTOC.astro";
+import { siteConfig } from "../config/site.config";
 
 type Props = {
   title: string;
@@ -9,17 +10,58 @@ type Props = {
   date: Date;
   tags?: string[];
   headings?: { depth: number; slug: string; text: string }[];
+  image?: string;
+  updated?: Date;
 };
 
-const { title, description, category, date, tags = [], headings = [] } = Astro.props;
+const { title, description, category, date, tags = [], headings = [], image, updated } = Astro.props;
 const formattedDate = new Intl.DateTimeFormat("en", {
   month: "long",
   day: "numeric",
   year: "numeric",
 }).format(date);
+
+const pageUrl = `${Astro.site}${Astro.url.pathname}`;
+const imageUrl = image ? (image.startsWith("http") ? image : `${Astro.site}${image}`) : `${Astro.site}/images/og-default.png`;
+
+const blogPostingSchema = {
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  headline: title,
+  description,
+  datePublished: date.toISOString(),
+  dateModified: (updated ?? date).toISOString(),
+  author: {
+    "@type": "Person",
+    name: siteConfig.author.name,
+    jobTitle: siteConfig.author.role,
+    description: siteConfig.author.bio,
+    sameAs: [siteConfig.author.github, siteConfig.author.linkedin, siteConfig.author.huggingFace].filter(Boolean),
+  },
+  publisher: {
+    "@type": "Organization",
+    name: siteConfig.publisher.name,
+    logo: {
+      "@type": "ImageObject",
+      url: `${siteConfig.siteUrl}${siteConfig.publisher.logo}`,
+    },
+  },
+  image: [imageUrl],
+  mainEntityOfPage: {
+    "@type": "WebPage",
+    "@id": pageUrl,
+  },
+};
 ---
 
-<BaseLayout title={`${title} — GinkgoQ`} description={description}>
+<BaseLayout
+  title={`${title} — GinkgoQ`}
+  description={description}
+  pageImage={imageUrl}
+  pageType="article"
+  datePublished={date.toISOString()}
+  dateModified={(updated ?? date).toISOString()}
+>
   <article class="article container">
     <div class="article-main">
       <a class="back-link" href={Astro.url.pathname.startsWith("/blog/") ? "/blog/" : "/research-notes/"}>
@@ -55,7 +97,14 @@ const formattedDate = new Intl.DateTimeFormat("en", {
           Back to {Astro.url.pathname.startsWith("/blog/") ? "Blog" : "Research Notes"}
         </a>
       </div>
+
+      <aside class="author-card" aria-label="About the author">
+        <strong>{siteConfig.author.name}</strong>
+        <p>{siteConfig.author.bio}</p>
+      </aside>
     </div>
+
+    <script type="application/ld+json" set:html={JSON.stringify(blogPostingSchema)} />
 
     <ArticleTOC headings={headings} />
   </article>

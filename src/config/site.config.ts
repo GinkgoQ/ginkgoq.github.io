@@ -14,11 +14,14 @@ export const siteConfig = {
   },
 
   nav: {
-    order: ["/", "/blog/", "/research-notes/", "/about/"],
+    order: ["/", "/start-here/", "/blog/", "/research-notes/", "/releases/", "/roadmap/", "/about/"],
     labels: {
       "/": "Home",
+      "/start-here/": "Start here",
       "/blog/": "Blog",
       "/research-notes/": "Research Notes",
+      "/releases/": "Releases",
+      "/roadmap/": "Roadmap",
       "/about/": "About",
     },
   },
@@ -36,6 +39,23 @@ export const siteConfig = {
       baseUrl: "https://api.example.com",
     },
     youtube: "https://www.youtube.com/ginkgoq",
+  },
+
+  siteUrl: "https://ginkgoq.github.io",
+
+  author: {
+    name: "Arman Asgharpoor",
+    role: "Lead AI Engineer",
+    bio: "Works on production AI systems, RAG, speech AI, VLMs, and backend AI infrastructure.",
+    github: "https://github.com/Ginkgo-AI-Team",
+    linkedin: "https://www.linkedin.com/in/arman-asgharpoor/",
+    huggingFace: "https://huggingface.co/GinkgoQ",
+  },
+
+  publisher: {
+    name: "GinkgoQ",
+    url: "https://ginkgoq.github.io",
+    logo: "/favicon.svg",
   },
 
   contact: {
@@ -86,6 +106,13 @@ export const siteConfig = {
       },
       sections: [
         {
+          href: "/start-here/",
+          number: "00",
+          title: "Start here",
+          description: "New to GinkgoQ? Start with an introduction to what GinkgoQ is and how we publish.",
+          actionText: "Read the guide",
+        },
+      {
           href: "/blog/",
           number: "01",
           title: "Blog",
