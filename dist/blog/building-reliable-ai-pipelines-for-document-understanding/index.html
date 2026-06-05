@@ -1,36 +1,441 @@
-<!DOCTYPE html><html lang="en" data-theme="light" data-astro-cid-37fxchfa> <!-- Google tag (gtag.js) --> <head><script async src="https://www.googletagmanager.com/gtag/js?id=G-FHHNFNDEPZ"></script><script type="module">window.dataLayer=window.dataLayer||[];function a(){dataLayer.push(arguments)}a("js",new Date);a("config","G-FHHNFNDEPZ");</script><link rel="manifest" href="/site.webmanifest"><link rel="alternate" type="application/rss+xml" title="GinkgoQ RSS Feed" href="/rss.xml"><link rel="author" href="/humans.txt"><meta charset="UTF-8"><meta name="description" content="How structured validation, confidence scoring, and observability turn document AI from prototype to production."><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="Astro v6.3.5"><title>Building reliable extraction pipelines for document understanding — GinkgoQ</title><meta property="og:title" content="Building reliable extraction pipelines for document understanding — GinkgoQ"><meta property="og:description" content="How structured validation, confidence scoring, and observability turn document AI from prototype to production."><meta property="og:type" content="article"><meta property="og:url" content="https://ginkgoq.github.io/blog/building-reliable-ai-pipelines-for-document-understanding/"><meta property="og:image" content="https://ginkgoq.github.io//images/og-default.png"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="Building reliable extraction pipelines for document understanding — GinkgoQ"><meta name="twitter:description" content="How structured validation, confidence scoring, and observability turn document AI from prototype to production."><meta name="twitter:image" content="https://ginkgoq.github.io//images/og-default.png"><link rel="icon" href="/favicon.svg"><link rel="canonical" href="https://ginkgoq.github.io/blog/building-reliable-ai-pipelines-for-document-understanding/"><script type="application/ld+json">[{"@type":"Organization","@context":"https://schema.org","name":"GinkgoQ","url":"https://ginkgoq.github.io","logo":{"@type":"ImageObject","url":"https://ginkgoq.github.io/favicon.svg"}},{"@type":"WebSite","@context":"https://schema.org","url":"https://ginkgoq.github.io","name":"GinkgoQ","publisher":{"@type":"Organization","name":"GinkgoQ"}}]</script><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="true"><link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet"><link rel="stylesheet" href="/_astro/404.BO31meoj.css"></head> <body data-astro-cid-37fxchfa> <a class="skip-link" href="#main" data-astro-cid-37fxchfa>Skip to content</a> <div class="reading-progress" id="reading-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Reading progress" aria-hidden="true" data-astro-cid-37fxchfa></div> <div class="page-bg" data-astro-cid-37fxchfa> <div class="card-shell" data-astro-cid-37fxchfa> <div id="scroll-sentinel" style="position:absolute;top:0;height:1px;width:1px;pointer-events:none;" aria-hidden="true" data-astro-cid-37fxchfa></div> <header class="site-header" id="site-header" role="banner" data-astro-cid-3ef6ksr2> <a class="brand" href="/" aria-label="GinkgoQ — home" data-astro-cid-3ef6ksr2> <span class="brand-mark" aria-hidden="true" data-astro-cid-3ef6ksr2> <img class="brand-logo" src="/favicon.svg" alt="GinkgoQ mark" data-astro-cid-3ef6ksr2> </span> <span class="brand-word" aria-label="GINKGOQ"> <span aria-hidden="true">G</span><span aria-hidden="true">I</span><span aria-hidden="true">N</span><span aria-hidden="true">K</span><span aria-hidden="true">G</span><span aria-hidden="true">O</span><span class="brand-q" aria-hidden="true">Q</span> </span> </a> <div class="header-middle" role="presentation" data-astro-cid-3ef6ksr2> <nav class="site-nav" id="site-nav" aria-label="Main navigation" data-astro-cid-3ef6ksr2> <a href="/start-here/" data-astro-cid-3ef6ksr2>Start here</a><a href="/blog/" data-astro-cid-3ef6ksr2>Blog</a><a href="/research-notes/" data-astro-cid-3ef6ksr2>Research Notes</a><a href="/roadmap/" data-astro-cid-3ef6ksr2>Roadmap</a><a href="/about/" data-astro-cid-3ef6ksr2>About</a> </nav> <div class="header-search" id="header-search" role="search" aria-label="Search GinkgoQ" data-astro-cid-3ef6ksr2> <div class="search-inner" data-astro-cid-3ef6ksr2> <label for="search-input" class="sr-only" data-astro-cid-3ef6ksr2>Search posts and notes</label> <div class="search-field" data-astro-cid-3ef6ksr2> <input type="search" id="search-input" class="search-input" placeholder="Search articles and research…" autocomplete="off" autocorrect="off" spellcheck="false" role="combobox" aria-haspopup="listbox" aria-autocomplete="list" aria-controls="search-results-list" aria-expanded="false" data-astro-cid-3ef6ksr2> <button class="search-close-hint" id="btn-search-close" aria-label="Close search" hidden type="button" data-astro-cid-3ef6ksr2>Esc</button> </div> </div> </div> </div> <div class="header-actions" data-astro-cid-3ef6ksr2> <button class="btn-icon btn-theme" id="btn-theme" aria-label="Switch theme" type="button" data-astro-cid-3ef6ksr2> <svg class="icon-sun" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" data-astro-cid-3ef6ksr2> <circle cx="12" cy="12" r="5" data-astro-cid-3ef6ksr2></circle> <line x1="12" y1="1" x2="12" y2="3" data-astro-cid-3ef6ksr2></line> <line x1="12" y1="21" x2="12" y2="23" data-astro-cid-3ef6ksr2></line> <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" data-astro-cid-3ef6ksr2></line> <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" data-astro-cid-3ef6ksr2></line> <line x1="1" y1="12" x2="3" y2="12" data-astro-cid-3ef6ksr2></line> <line x1="21" y1="12" x2="23" y2="12" data-astro-cid-3ef6ksr2></line> <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" data-astro-cid-3ef6ksr2></line> <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" data-astro-cid-3ef6ksr2></line> </svg> <svg class="icon-moon" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" data-astro-cid-3ef6ksr2> <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" data-astro-cid-3ef6ksr2></path> </svg> </button> <button class="search-pill" id="btn-search-open" aria-label="Search (⌘K)" aria-expanded="false" aria-controls="search-results-panel" type="button" data-astro-cid-3ef6ksr2> <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" data-astro-cid-3ef6ksr2> <circle cx="11" cy="11" r="8" data-astro-cid-3ef6ksr2></circle> <line x1="21" y1="21" x2="16.65" y2="16.65" data-astro-cid-3ef6ksr2></line> </svg> <span class="search-pill-label" data-astro-cid-3ef6ksr2>Search</span> <span class="search-kbd-hint" aria-hidden="true" data-astro-cid-3ef6ksr2><kbd data-astro-cid-3ef6ksr2>⌘</kbd><kbd data-astro-cid-3ef6ksr2>K</kbd></span> </button> <a class="btn-icon" href="/rss.xml" aria-label="Subscribe via RSS" title="Subscribe via RSS" data-astro-cid-3ef6ksr2> <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" data-astro-cid-3ef6ksr2> <path d="M4.5 19.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3Z" data-astro-cid-3ef6ksr2></path> <path d="M4.5 12.75c5.623 0 10.185 4.562 10.185 10.185" data-astro-cid-3ef6ksr2></path> <path d="M4.5 6c8.284 0 15 6.716 15 15" data-astro-cid-3ef6ksr2></path> </svg> </a> <button class="btn-icon btn-hamburger" id="btn-hamburger" aria-label="Open navigation" aria-expanded="false" aria-controls="mobile-nav" type="button" data-astro-cid-3ef6ksr2> <svg id="icon-hamburger" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" data-astro-cid-3ef6ksr2> <line x1="3" y1="6" x2="21" y2="6" data-astro-cid-3ef6ksr2></line> <line x1="3" y1="12" x2="21" y2="12" data-astro-cid-3ef6ksr2></line> <line x1="3" y1="18" x2="21" y2="18" data-astro-cid-3ef6ksr2></line> </svg> <svg id="icon-hamburger-close" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true" style="display:none;" data-astro-cid-3ef6ksr2> <line x1="18" y1="6" x2="6" y2="18" data-astro-cid-3ef6ksr2></line> <line x1="6" y1="6" x2="18" y2="18" data-astro-cid-3ef6ksr2></line> </svg> </button> </div> </header> <div class="mobile-nav" id="mobile-nav" role="dialog" aria-modal="true" aria-hidden="true" aria-label="Mobile navigation" data-astro-cid-3ef6ksr2> <div class="mobile-nav-inner" data-astro-cid-3ef6ksr2> <a href="/start-here/" data-astro-cid-3ef6ksr2>Start here</a><a href="/blog/" data-astro-cid-3ef6ksr2>Blog</a><a href="/research-notes/" data-astro-cid-3ef6ksr2>Research Notes</a><a href="/roadmap/" data-astro-cid-3ef6ksr2>Roadmap</a><a href="/about/" data-astro-cid-3ef6ksr2>About</a> </div> </div> <div class="search-results-panel" id="search-results-panel" hidden data-astro-cid-37fxchfa> <div class="search-results-inner" data-astro-cid-37fxchfa> <ul class="search-results-list" id="search-results-list" role="listbox" data-astro-cid-37fxchfa></ul> </div> </div> <main id="main" data-astro-cid-37fxchfa>  <article class="article container" data-astro-cid-gjtny2mx> <div class="article-main" data-astro-cid-gjtny2mx> <a class="back-link" href="/blog/" data-astro-cid-gjtny2mx> <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" data-astro-cid-gjtny2mx><path d="M13 8H3M8 3 3 8l5 5" data-astro-cid-gjtny2mx></path></svg> Blog </a> <header class="article-header" data-astro-cid-gjtny2mx> <span class="eyebrow" data-astro-cid-gjtny2mx>Engineering</span> <h1 data-astro-cid-gjtny2mx>Building reliable extraction pipelines for document understanding</h1> <p class="dek" data-astro-cid-gjtny2mx>How structured validation, confidence scoring, and observability turn document AI from prototype to production.</p> <div class="article-meta" data-astro-cid-gjtny2mx> <time datetime="2026-05-08T00:00:00.000Z" data-astro-cid-gjtny2mx>May 8, 2026</time> <span data-astro-cid-gjtny2mx>2 min read</span> <span class="tag-pill" data-astro-cid-gjtny2mx>Documents</span><span class="tag-pill" data-astro-cid-gjtny2mx>Pipelines</span><span class="tag-pill" data-astro-cid-gjtny2mx>Production</span> </div> </header> <div class="prose" data-astro-cid-gjtny2mx>  <h2 id="the-real-requirement-structured-data-not-summaries">The real requirement: structured data, not summaries</h2>
-<p>Document AI rarely stops at summarization. In production, teams need extracted entities, normalized values, source references, and confidence scores that actually inform downstream decisions.</p>
-<p>The challenge isn’t extracting information—it’s extracting it reliably enough to make automation worthwhile. A system that catches 95% of cases might save work on some documents but create more work on others when errors go undetected.</p>
-<h2 id="a-practical-architecture">A practical architecture</h2>
-<p>The reliable pattern treats extraction as a pipeline of observable stages. Each step produces output that feeds into the next, with validation and confidence signals at each point.</p>
-<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="python"><code><span class="line"><span style="color:#F97583">def</span><span style="color:#B392F0"> process_document</span><span style="color:#E1E4E8">(document, extractor, validator):</span></span>
-<span class="line"><span style="color:#6A737D">    # Extract structured fields from the document</span></span>
-<span class="line"><span style="color:#E1E4E8">    fields </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> extractor.extract(document)</span></span>
+<!DOCTYPE html><html lang="en" data-theme="light" data-astro-cid-37fxchfa> <!-- Google tag (gtag.js) --> <head><script async src="https://www.googletagmanager.com/gtag/js?id=G-FHHNFNDEPZ"></script><script type="module">window.dataLayer=window.dataLayer||[];function a(){dataLayer.push(arguments)}a("js",new Date);a("config","G-FHHNFNDEPZ");</script><link rel="manifest" href="/site.webmanifest"><link rel="alternate" type="application/rss+xml" title="GinkgoQ RSS Feed" href="/rss.xml"><link rel="author" href="/humans.txt"><meta charset="UTF-8"><meta name="description" content="A practical guide to designing document AI pipelines with structured extraction, validation, confidence scoring, provenance, human review, and production observability."><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="Astro v6.3.5"><title>Building Reliable Extraction Pipelines for Document Understanding — GinkgoQ</title><meta property="og:title" content="Building Reliable Extraction Pipelines for Document Understanding — GinkgoQ"><meta property="og:description" content="A practical guide to designing document AI pipelines with structured extraction, validation, confidence scoring, provenance, human review, and production observability."><meta property="og:type" content="article"><meta property="og:url" content="https://ginkgoq.github.io/blog/building-reliable-ai-pipelines-for-document-understanding/"><meta property="og:image" content="https://ginkgoq.github.io//images/og-default.png"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="Building Reliable Extraction Pipelines for Document Understanding — GinkgoQ"><meta name="twitter:description" content="A practical guide to designing document AI pipelines with structured extraction, validation, confidence scoring, provenance, human review, and production observability."><meta name="twitter:image" content="https://ginkgoq.github.io//images/og-default.png"><link rel="icon" href="/favicon.svg"><link rel="canonical" href="https://ginkgoq.github.io/blog/building-reliable-ai-pipelines-for-document-understanding/"><script type="application/ld+json">[{"@type":"Organization","@context":"https://schema.org","name":"GinkgoQ","url":"https://ginkgoq.github.io","logo":{"@type":"ImageObject","url":"https://ginkgoq.github.io/favicon.svg"}},{"@type":"WebSite","@context":"https://schema.org","url":"https://ginkgoq.github.io","name":"GinkgoQ","publisher":{"@type":"Organization","name":"GinkgoQ"}}]</script><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="true"><link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet"><link rel="stylesheet" href="/_astro/404.D3HxzjoC.css"><style>.mermaid-figure[data-astro-cid-qz3dz2lk]{margin:2rem 0;padding:1rem;border:1px solid var(--color-line);border-radius:var(--radius-sm);background:var(--color-surface-2);overflow-x:auto;transition:background-color .24s var(--ease),border-color .24s var(--ease)}.mermaid-figure[data-astro-cid-qz3dz2lk] figcaption[data-astro-cid-qz3dz2lk]{margin:0 0 .85rem;color:var(--color-subtle);font-family:var(--font-mono);font-size:.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase}.mermaid[data-astro-cid-qz3dz2lk]{min-width:620px;margin:0;background:transparent}.mermaid[data-astro-cid-qz3dz2lk] svg{display:block;max-width:none;color:var(--color-text)}.mermaid[data-astro-cid-qz3dz2lk] .node rect,.mermaid[data-astro-cid-qz3dz2lk] .node circle,.mermaid[data-astro-cid-qz3dz2lk] .node ellipse,.mermaid[data-astro-cid-qz3dz2lk] .node polygon,.mermaid[data-astro-cid-qz3dz2lk] .node path{fill:var(--color-surface)!important;stroke:var(--color-accent)!important}.mermaid[data-astro-cid-qz3dz2lk] .cluster rect{fill:var(--color-surface-2)!important;stroke:var(--color-line)!important}.mermaid[data-astro-cid-qz3dz2lk] .edgePath path,.mermaid[data-astro-cid-qz3dz2lk] .flowchart-link,.mermaid[data-astro-cid-qz3dz2lk] .transition,.mermaid[data-astro-cid-qz3dz2lk] .messageLine0,.mermaid[data-astro-cid-qz3dz2lk] .messageLine1{stroke:var(--color-accent)!important}.mermaid[data-astro-cid-qz3dz2lk] .arrowheadPath,.mermaid[data-astro-cid-qz3dz2lk] marker path{fill:var(--color-accent)!important;stroke:var(--color-accent)!important}.mermaid[data-astro-cid-qz3dz2lk] text,.mermaid[data-astro-cid-qz3dz2lk] .label,.mermaid[data-astro-cid-qz3dz2lk] .nodeLabel,.mermaid[data-astro-cid-qz3dz2lk] .edgeLabel,.mermaid[data-astro-cid-qz3dz2lk] .actor,.mermaid[data-astro-cid-qz3dz2lk] .messageText,.mermaid[data-astro-cid-qz3dz2lk] .stateLabel,.mermaid[data-astro-cid-qz3dz2lk] .labelText{fill:var(--color-text)!important;color:var(--color-text)!important}.mermaid[data-astro-cid-qz3dz2lk] .edgeLabel,.mermaid[data-astro-cid-qz3dz2lk] .edgeLabel p,.mermaid[data-astro-cid-qz3dz2lk] .labelBkg{background:var(--color-surface-2)!important;fill:var(--color-surface-2)!important}.mermaid[data-astro-cid-qz3dz2lk] .actor{fill:var(--color-surface)!important;stroke:var(--color-accent)!important}
+</style></head> <body data-astro-cid-37fxchfa> <a class="skip-link" href="#main" data-astro-cid-37fxchfa>Skip to content</a> <div class="reading-progress" id="reading-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Reading progress" aria-hidden="true" data-astro-cid-37fxchfa></div> <div class="page-bg" data-astro-cid-37fxchfa> <div class="card-shell" data-astro-cid-37fxchfa> <div id="scroll-sentinel" style="position:absolute;top:0;height:1px;width:1px;pointer-events:none;" aria-hidden="true" data-astro-cid-37fxchfa></div> <header class="site-header" id="site-header" role="banner" data-astro-cid-3ef6ksr2> <a class="brand" href="/" aria-label="GinkgoQ — home" data-astro-cid-3ef6ksr2> <span class="brand-mark" aria-hidden="true" data-astro-cid-3ef6ksr2> <img class="brand-logo" src="/favicon.svg" alt="GinkgoQ mark" data-astro-cid-3ef6ksr2> </span> <span class="brand-word" aria-label="GINKGOQ"> <span aria-hidden="true">G</span><span aria-hidden="true">I</span><span aria-hidden="true">N</span><span aria-hidden="true">K</span><span aria-hidden="true">G</span><span aria-hidden="true">O</span><span class="brand-q" aria-hidden="true">Q</span> </span> </a> <div class="header-middle" role="presentation" data-astro-cid-3ef6ksr2> <nav class="site-nav" id="site-nav" aria-label="Main navigation" data-astro-cid-3ef6ksr2> <a href="/start-here/" data-astro-cid-3ef6ksr2>Start here</a><a href="/blog/" data-astro-cid-3ef6ksr2>Blog</a><a href="/research-notes/" data-astro-cid-3ef6ksr2>Research Notes</a><a href="/roadmap/" data-astro-cid-3ef6ksr2>Roadmap</a><a href="/about/" data-astro-cid-3ef6ksr2>About</a> </nav> <div class="header-search" id="header-search" role="search" aria-label="Search GinkgoQ" data-astro-cid-3ef6ksr2> <div class="search-inner" data-astro-cid-3ef6ksr2> <label for="search-input" class="sr-only" data-astro-cid-3ef6ksr2>Search posts and notes</label> <div class="search-field" data-astro-cid-3ef6ksr2> <input type="search" id="search-input" class="search-input" placeholder="Search articles and research…" autocomplete="off" autocorrect="off" spellcheck="false" role="combobox" aria-haspopup="listbox" aria-autocomplete="list" aria-controls="search-results-list" aria-expanded="false" data-astro-cid-3ef6ksr2> <button class="search-close-hint" id="btn-search-close" aria-label="Close search" hidden type="button" data-astro-cid-3ef6ksr2>Esc</button> </div> </div> </div> </div> <div class="header-actions" data-astro-cid-3ef6ksr2> <button class="btn-icon btn-theme" id="btn-theme" aria-label="Switch theme" type="button" data-astro-cid-3ef6ksr2> <svg class="icon-sun" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" data-astro-cid-3ef6ksr2> <circle cx="12" cy="12" r="5" data-astro-cid-3ef6ksr2></circle> <line x1="12" y1="1" x2="12" y2="3" data-astro-cid-3ef6ksr2></line> <line x1="12" y1="21" x2="12" y2="23" data-astro-cid-3ef6ksr2></line> <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" data-astro-cid-3ef6ksr2></line> <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" data-astro-cid-3ef6ksr2></line> <line x1="1" y1="12" x2="3" y2="12" data-astro-cid-3ef6ksr2></line> <line x1="21" y1="12" x2="23" y2="12" data-astro-cid-3ef6ksr2></line> <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" data-astro-cid-3ef6ksr2></line> <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" data-astro-cid-3ef6ksr2></line> </svg> <svg class="icon-moon" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" data-astro-cid-3ef6ksr2> <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" data-astro-cid-3ef6ksr2></path> </svg> </button> <button class="search-pill" id="btn-search-open" aria-label="Search (⌘K)" aria-expanded="false" aria-controls="search-results-panel" type="button" data-astro-cid-3ef6ksr2> <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" data-astro-cid-3ef6ksr2> <circle cx="11" cy="11" r="8" data-astro-cid-3ef6ksr2></circle> <line x1="21" y1="21" x2="16.65" y2="16.65" data-astro-cid-3ef6ksr2></line> </svg> <span class="search-pill-label" data-astro-cid-3ef6ksr2>Search</span> <span class="search-kbd-hint" aria-hidden="true" data-astro-cid-3ef6ksr2><kbd data-astro-cid-3ef6ksr2>⌘</kbd><kbd data-astro-cid-3ef6ksr2>K</kbd></span> </button> <a class="btn-icon" href="/rss.xml" aria-label="Subscribe via RSS" title="Subscribe via RSS" data-astro-cid-3ef6ksr2> <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" data-astro-cid-3ef6ksr2> <path d="M4.5 19.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3Z" data-astro-cid-3ef6ksr2></path> <path d="M4.5 12.75c5.623 0 10.185 4.562 10.185 10.185" data-astro-cid-3ef6ksr2></path> <path d="M4.5 6c8.284 0 15 6.716 15 15" data-astro-cid-3ef6ksr2></path> </svg> </a> <button class="btn-icon btn-hamburger" id="btn-hamburger" aria-label="Open navigation" aria-expanded="false" aria-controls="mobile-nav" type="button" data-astro-cid-3ef6ksr2> <svg id="icon-hamburger" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" data-astro-cid-3ef6ksr2> <line x1="3" y1="6" x2="21" y2="6" data-astro-cid-3ef6ksr2></line> <line x1="3" y1="12" x2="21" y2="12" data-astro-cid-3ef6ksr2></line> <line x1="3" y1="18" x2="21" y2="18" data-astro-cid-3ef6ksr2></line> </svg> <svg id="icon-hamburger-close" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true" style="display:none;" data-astro-cid-3ef6ksr2> <line x1="18" y1="6" x2="6" y2="18" data-astro-cid-3ef6ksr2></line> <line x1="6" y1="6" x2="18" y2="18" data-astro-cid-3ef6ksr2></line> </svg> </button> </div> </header> <div class="mobile-nav" id="mobile-nav" role="dialog" aria-modal="true" aria-hidden="true" aria-label="Mobile navigation" data-astro-cid-3ef6ksr2> <div class="mobile-nav-inner" data-astro-cid-3ef6ksr2> <a href="/start-here/" data-astro-cid-3ef6ksr2>Start here</a><a href="/blog/" data-astro-cid-3ef6ksr2>Blog</a><a href="/research-notes/" data-astro-cid-3ef6ksr2>Research Notes</a><a href="/roadmap/" data-astro-cid-3ef6ksr2>Roadmap</a><a href="/about/" data-astro-cid-3ef6ksr2>About</a> </div> </div> <div class="search-results-panel" id="search-results-panel" hidden data-astro-cid-37fxchfa> <div class="search-results-inner" data-astro-cid-37fxchfa> <ul class="search-results-list" id="search-results-list" role="listbox" data-astro-cid-37fxchfa></ul> </div> </div> <main id="main" data-astro-cid-37fxchfa>  <article class="article container" data-astro-cid-gjtny2mx> <div class="article-main" data-astro-cid-gjtny2mx> <a class="back-link" href="/blog/" data-astro-cid-gjtny2mx> <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" data-astro-cid-gjtny2mx><path d="M13 8H3M8 3 3 8l5 5" data-astro-cid-gjtny2mx></path></svg> Blog </a> <header class="article-header" data-astro-cid-gjtny2mx> <span class="eyebrow" data-astro-cid-gjtny2mx>Engineering</span> <h1 data-astro-cid-gjtny2mx>Building Reliable Extraction Pipelines for Document Understanding</h1> <p class="dek" data-astro-cid-gjtny2mx>A practical guide to designing document AI pipelines with structured extraction, validation, confidence scoring, provenance, human review, and production observability.</p> <div class="article-meta" data-astro-cid-gjtny2mx> <time datetime="2026-05-08T00:00:00.000Z" data-astro-cid-gjtny2mx>May 8, 2026</time> <span data-astro-cid-gjtny2mx>9 min read</span> <span class="tag-pill" data-astro-cid-gjtny2mx>Documents</span><span class="tag-pill" data-astro-cid-gjtny2mx>Extraction</span><span class="tag-pill" data-astro-cid-gjtny2mx>Pipelines</span> </div> </header> <div class="prose" data-astro-cid-gjtny2mx>  <p>Document AI is often sold as summarization. In production, summarization is usually the least important part.</p>
+<p>Teams need structured fields, normalized values, source references, confidence scores, and clear review paths. A document understanding system is useful only when its output can feed a workflow: approve an invoice, flag a contract risk, route an insurance claim, update a record, or prepare a case for human review.</p>
+<p>The hard problem is not extracting something from a document. The hard problem is extracting the right information reliably enough that downstream users can act on it.</p>
+<figure class="mermaid-figure" data-astro-cid-qz3dz2lk> <figcaption data-astro-cid-qz3dz2lk>Document understanding dataflow</figcaption> <pre class="mermaid" data-astro-cid-qz3dz2lk>flowchart LR
+D[Document] --&gt; I[Ingestion and OCR]
+I --&gt; C[Document classification]
+C --&gt; S[Structure parsing]
+S --&gt; R[Relevant section retrieval]
+R --&gt; X[Field extraction]
+X --&gt; N[Normalization]
+N --&gt; V[Validation rules]
+V --&gt; Conf[Confidence scoring]
+Conf --&gt; Decision{Route}
+Decision --&gt;|safe| Auto[Automation]
+Decision --&gt;|uncertain| Review[Human review]
+Decision --&gt;|invalid| Reject[Reject or request correction]
+Review --&gt; Feedback[Correction feedback]
+Feedback --&gt; Evals[Regression evals]</pre> </figure> <script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+
+  const isDark = document.documentElement.dataset.theme === "dark";
+  const themeVariables = isDark
+    ? {
+        background: "#14161e",
+        mainBkg: "#1a1d28",
+        secondBkg: "#222638",
+        tertiaryColor: "#202433",
+        primaryColor: "#1a1d28",
+        primaryTextColor: "#eceef8",
+        primaryBorderColor: "#79863c",
+        secondaryColor: "#202433",
+        secondaryTextColor: "#eceef8",
+        secondaryBorderColor: "#2a2f43",
+        clusterBkg: "#14161e",
+        clusterBorder: "#2a2f43",
+        edgeLabelBackground: "#14161e",
+        lineColor: "#79863c",
+        textColor: "#eceef8",
+        nodeTextColor: "#eceef8",
+        fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif",
+      }
+    : {
+        background: "#fafaf8",
+        mainBkg: "#ffffff",
+        secondBkg: "#fafaf8",
+        tertiaryColor: "#f3f3ef",
+        primaryColor: "#ffffff",
+        primaryTextColor: "#101114",
+        primaryBorderColor: "#79863c",
+        secondaryColor: "#fafaf8",
+        secondaryTextColor: "#101114",
+        secondaryBorderColor: "#d8d8cf",
+        clusterBkg: "#fafaf8",
+        clusterBorder: "#d8d8cf",
+        edgeLabelBackground: "#ffffff",
+        lineColor: "#79863c",
+        textColor: "#101114",
+        nodeTextColor: "#101114",
+        fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif",
+      };
+
+  if (!window.__ginkgoqMermaidReady) {
+    window.__ginkgoqMermaidReady = true;
+    mermaid.initialize({
+      startOnLoad: false,
+      securityLevel: "strict",
+      theme: "base",
+      themeVariables,
+    });
+  }
+
+  await mermaid.run({ querySelector: ".mermaid" });
+</script>
+<h2 id="the-real-output-is-structured-data">The real output is structured data</h2>
+<p>A production document pipeline should not stop at a fluent paragraph.</p>
+<p>Useful output looks more like this:</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="json"><code><span class="line"><span style="color:#E1E4E8">{</span></span>
+<span class="line"><span style="color:#79B8FF">  &quot;document_type&quot;</span><span style="color:#E1E4E8">: </span><span style="color:#9ECBFF">&quot;vendor_contract&quot;</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#79B8FF">  &quot;fields&quot;</span><span style="color:#E1E4E8">: {</span></span>
+<span class="line"><span style="color:#79B8FF">    &quot;effective_date&quot;</span><span style="color:#E1E4E8">: {</span></span>
+<span class="line"><span style="color:#79B8FF">      &quot;value&quot;</span><span style="color:#E1E4E8">: </span><span style="color:#9ECBFF">&quot;2026-07-01&quot;</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#79B8FF">      &quot;confidence&quot;</span><span style="color:#E1E4E8">: </span><span style="color:#79B8FF">0.94</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#79B8FF">      &quot;source&quot;</span><span style="color:#E1E4E8">: </span><span style="color:#9ECBFF">&quot;section_1.2&quot;</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#79B8FF">      &quot;evidence_text&quot;</span><span style="color:#E1E4E8">: </span><span style="color:#9ECBFF">&quot;This Agreement is effective as of July 1, 2026.&quot;</span></span>
+<span class="line"><span style="color:#E1E4E8">    },</span></span>
+<span class="line"><span style="color:#79B8FF">    &quot;termination_notice_days&quot;</span><span style="color:#E1E4E8">: {</span></span>
+<span class="line"><span style="color:#79B8FF">      &quot;value&quot;</span><span style="color:#E1E4E8">: </span><span style="color:#79B8FF">30</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#79B8FF">      &quot;confidence&quot;</span><span style="color:#E1E4E8">: </span><span style="color:#79B8FF">0.88</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#79B8FF">      &quot;source&quot;</span><span style="color:#E1E4E8">: </span><span style="color:#9ECBFF">&quot;section_9.1&quot;</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#79B8FF">      &quot;evidence_text&quot;</span><span style="color:#E1E4E8">: </span><span style="color:#9ECBFF">&quot;Either party may terminate with thirty days written notice.&quot;</span></span>
+<span class="line"><span style="color:#E1E4E8">    }</span></span>
+<span class="line"><span style="color:#E1E4E8">  },</span></span>
+<span class="line"><span style="color:#79B8FF">  &quot;validation&quot;</span><span style="color:#E1E4E8">: {</span></span>
+<span class="line"><span style="color:#79B8FF">    &quot;status&quot;</span><span style="color:#E1E4E8">: </span><span style="color:#9ECBFF">&quot;needs_review&quot;</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#79B8FF">    &quot;issues&quot;</span><span style="color:#E1E4E8">: [</span><span style="color:#9ECBFF">&quot;Missing governing law field&quot;</span><span style="color:#E1E4E8">]</span></span>
+<span class="line"><span style="color:#E1E4E8">  }</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span></code></pre>
+<p>This kind of output can be inspected, validated, stored, searched, audited, and improved. A summary cannot do all of that.</p>
+<h2 id="a-reliable-pipeline-has-observable-stages">A reliable pipeline has observable stages</h2>
+<p>Treat document understanding as a pipeline, not a single model call.</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="text"><code><span class="line"><span>ingest document</span></span>
+<span class="line"><span>  -&gt; classify document type</span></span>
+<span class="line"><span>  -&gt; split and normalize structure</span></span>
+<span class="line"><span>  -&gt; retrieve relevant sections</span></span>
+<span class="line"><span>  -&gt; extract fields</span></span>
+<span class="line"><span>  -&gt; normalize values</span></span>
+<span class="line"><span>  -&gt; validate against rules</span></span>
+<span class="line"><span>  -&gt; score confidence</span></span>
+<span class="line"><span>  -&gt; route to automation or review</span></span>
+<span class="line"><span>  -&gt; log evidence and decisions</span></span></code></pre>
+<p>Each stage should produce an artifact that can be inspected. If a value is wrong, the team should know whether the issue came from OCR, classification, chunking, retrieval, extraction, normalization, validation, or final presentation.</p>
+<p>Without that separation, every failure becomes “the model was wrong,” which is not useful enough for production debugging.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Stage</th><th>Artifact</th><th>Failure it reveals</th></tr></thead><tbody><tr><td>Ingestion</td><td>Parsed text, OCR confidence, page map</td><td>Bad scan, missing page, OCR corruption</td></tr><tr><td>Classification</td><td>Document type and confidence</td><td>Wrong schema selection</td></tr><tr><td>Structure parsing</td><td>Sections, tables, headings</td><td>Lost context or table boundaries</td></tr><tr><td>Extraction</td><td>Field values and evidence</td><td>Missing or ambiguous data</td></tr><tr><td>Normalization</td><td>Canonical values</td><td>Format conversion errors</td></tr><tr><td>Validation</td><td>Rule results and issues</td><td>Business-rule mismatch</td></tr><tr><td>Routing</td><td>Automation or review decision</td><td>Wrong confidence threshold</td></tr></tbody></table>
+<h2 id="step-1-classify-the-document-before-extracting-fields">Step 1: classify the document before extracting fields</h2>
+<p>Different document types need different schemas.</p>
+<p>An invoice, employment agreement, discharge summary, purchase order, and lab report do not share the same extraction targets. If the system extracts from all documents using one generic prompt, it will either miss important fields or invent structure that does not belong.</p>
+<p>Start with document classification:</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="json"><code><span class="line"><span style="color:#E1E4E8">{</span></span>
+<span class="line"><span style="color:#79B8FF">  &quot;document_type&quot;</span><span style="color:#E1E4E8">: </span><span style="color:#9ECBFF">&quot;invoice&quot;</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#79B8FF">  &quot;confidence&quot;</span><span style="color:#E1E4E8">: </span><span style="color:#79B8FF">0.97</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#79B8FF">  &quot;candidate_types&quot;</span><span style="color:#E1E4E8">: [</span><span style="color:#9ECBFF">&quot;invoice&quot;</span><span style="color:#E1E4E8">, </span><span style="color:#9ECBFF">&quot;purchase_order&quot;</span><span style="color:#E1E4E8">],</span></span>
+<span class="line"><span style="color:#79B8FF">  &quot;requires_human_review&quot;</span><span style="color:#E1E4E8">: </span><span style="color:#79B8FF">false</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span></code></pre>
+<p>Then route to a schema-specific extractor.</p>
+<p>This improves accuracy and makes validation possible because each document type has known required fields, optional fields, formats, and business rules.</p>
+<h2 id="step-2-preserve-document-structure">Step 2: preserve document structure</h2>
+<p>Many extraction errors happen because the system treats a document as plain text.</p>
+<p>Preserve:</p>
+<ul>
+<li>page numbers</li>
+<li>section titles</li>
+<li>table boundaries</li>
+<li>row and column positions</li>
+<li>headings and subheadings</li>
+<li>OCR confidence</li>
+<li>source coordinates when available</li>
+<li>parent-child relationships between sections</li>
+</ul>
+<p>Structure matters. A number in a pricing table means something different from the same number in a footnote. A date in a signature block means something different from a date in a renewal clause.</p>
+<p>Good document AI systems keep enough layout and hierarchy to interpret extracted values in context.</p>
+<h2 id="step-3-extract-with-a-schema-not-a-wish">Step 3: extract with a schema, not a wish</h2>
+<p>The extractor should return a strict shape.</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="python"><code><span class="line"><span style="color:#F97583">from</span><span style="color:#E1E4E8"> dataclasses </span><span style="color:#F97583">import</span><span style="color:#E1E4E8"> dataclass</span></span>
+<span class="line"><span style="color:#F97583">from</span><span style="color:#E1E4E8"> typing </span><span style="color:#F97583">import</span><span style="color:#E1E4E8"> Literal</span></span>
 <span class="line"></span>
-<span class="line"><span style="color:#6A737D">    # Validate against business rules and format requirements</span></span>
-<span class="line"><span style="color:#E1E4E8">    issues </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> validator.check(fields)</span></span>
+<span class="line"><span style="color:#B392F0">@dataclass</span></span>
+<span class="line"><span style="color:#F97583">class</span><span style="color:#B392F0"> ExtractedField</span><span style="color:#E1E4E8">:</span></span>
+<span class="line"><span style="color:#E1E4E8">    name: </span><span style="color:#79B8FF">str</span></span>
+<span class="line"><span style="color:#E1E4E8">    value: </span><span style="color:#79B8FF">str</span><span style="color:#F97583"> |</span><span style="color:#79B8FF"> int</span><span style="color:#F97583"> |</span><span style="color:#79B8FF"> float</span><span style="color:#F97583"> |</span><span style="color:#79B8FF"> None</span></span>
+<span class="line"><span style="color:#E1E4E8">    status: Literal[</span><span style="color:#9ECBFF">&quot;present&quot;</span><span style="color:#E1E4E8">, </span><span style="color:#9ECBFF">&quot;missing&quot;</span><span style="color:#E1E4E8">, </span><span style="color:#9ECBFF">&quot;ambiguous&quot;</span><span style="color:#E1E4E8">]</span></span>
+<span class="line"><span style="color:#E1E4E8">    confidence: </span><span style="color:#79B8FF">float</span></span>
+<span class="line"><span style="color:#E1E4E8">    source_id: </span><span style="color:#79B8FF">str</span><span style="color:#F97583"> |</span><span style="color:#79B8FF"> None</span></span>
+<span class="line"><span style="color:#E1E4E8">    evidence_text: </span><span style="color:#79B8FF">str</span><span style="color:#F97583"> |</span><span style="color:#79B8FF"> None</span></span></code></pre>
+<p>The schema should separate:</p>
+<ul>
+<li>the extracted value</li>
+<li>whether the field is present, missing, or ambiguous</li>
+<li>confidence</li>
+<li>evidence</li>
+<li>normalization status</li>
+<li>validation status</li>
+</ul>
+<p>Do not force the model to return a value when the document does not support one. Missing and ambiguous are valid production states.</p>
+<h2 id="step-4-normalize-values-before-validation">Step 4: normalize values before validation</h2>
+<p>Raw extraction is rarely enough.</p>
+<p>Examples:</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Raw value</th><th>Normalized value</th></tr></thead><tbody><tr><td><code>thirty days</code></td><td><code>30</code></td></tr><tr><td><code>07/01/26</code></td><td><code>2026-07-01</code></td></tr><tr><td><code>$1.2M</code></td><td><code>1200000</code></td></tr><tr><td><code>Net thirty</code></td><td><code>NET_30</code></td></tr><tr><td><code>N/A</code></td><td><code>null</code> with <code>status: missing</code></td></tr></tbody></table>
+<p>Normalization makes validation consistent. It also prevents downstream systems from having to interpret every format variation.</p>
+<p>Keep raw and normalized values:</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="json"><code><span class="line"><span style="color:#E1E4E8">{</span></span>
+<span class="line"><span style="color:#79B8FF">  &quot;raw_value&quot;</span><span style="color:#E1E4E8">: </span><span style="color:#9ECBFF">&quot;thirty days&quot;</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#79B8FF">  &quot;normalized_value&quot;</span><span style="color:#E1E4E8">: </span><span style="color:#79B8FF">30</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#79B8FF">  &quot;normalization_status&quot;</span><span style="color:#E1E4E8">: </span><span style="color:#9ECBFF">&quot;normalized&quot;</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#79B8FF">  &quot;normalization_rule&quot;</span><span style="color:#E1E4E8">: </span><span style="color:#9ECBFF">&quot;written_number_to_integer&quot;</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span></code></pre>
+<h2 id="step-5-validate-against-rules">Step 5: validate against rules</h2>
+<p>Validation turns extraction into a trustworthy system.</p>
+<p>Useful validation checks include:</p>
+<ul>
+<li>required fields are present</li>
+<li>dates are valid and ordered correctly</li>
+<li>monetary values have currencies</li>
+<li>totals match line items</li>
+<li>extracted values match allowed enums</li>
+<li>referenced sections exist</li>
+<li>values do not contradict each other</li>
+<li>confidence is high enough for automation</li>
+</ul>
+<p>Example:</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="python"><code><span class="line"><span style="color:#F97583">def</span><span style="color:#B392F0"> validate_invoice</span><span style="color:#E1E4E8">(fields):</span></span>
+<span class="line"><span style="color:#E1E4E8">    issues </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> []</span></span>
 <span class="line"></span>
-<span class="line"><span style="color:#6A737D">    # Score confidence accounting for validation problems</span></span>
-<span class="line"><span style="color:#E1E4E8">    confidence </span><span style="color:#F97583">=</span><span style="color:#79B8FF"> max</span><span style="color:#E1E4E8">(</span><span style="color:#79B8FF">0.0</span><span style="color:#E1E4E8">, fields.confidence </span><span style="color:#F97583">-</span><span style="color:#79B8FF"> 0.12</span><span style="color:#F97583"> *</span><span style="color:#79B8FF"> len</span><span style="color:#E1E4E8">(issues))</span></span>
+<span class="line"><span style="color:#F97583">    if</span><span style="color:#F97583"> not</span><span style="color:#E1E4E8"> fields.invoice_number.value:</span></span>
+<span class="line"><span style="color:#E1E4E8">        issues.append(</span><span style="color:#9ECBFF">&quot;invoice_number_missing&quot;</span><span style="color:#E1E4E8">)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">    if</span><span style="color:#E1E4E8"> fields.total.value </span><span style="color:#F97583">!=</span><span style="color:#79B8FF"> sum</span><span style="color:#E1E4E8">(item.amount </span><span style="color:#F97583">for</span><span style="color:#E1E4E8"> item </span><span style="color:#F97583">in</span><span style="color:#E1E4E8"> fields.line_items):</span></span>
+<span class="line"><span style="color:#E1E4E8">        issues.append(</span><span style="color:#9ECBFF">&quot;total_does_not_match_line_items&quot;</span><span style="color:#E1E4E8">)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">    if</span><span style="color:#E1E4E8"> fields.due_date.value </span><span style="color:#F97583">and</span><span style="color:#E1E4E8"> fields.invoice_date.value:</span></span>
+<span class="line"><span style="color:#F97583">        if</span><span style="color:#E1E4E8"> fields.due_date.value </span><span style="color:#F97583">&lt;</span><span style="color:#E1E4E8"> fields.invoice_date.value:</span></span>
+<span class="line"><span style="color:#E1E4E8">            issues.append(</span><span style="color:#9ECBFF">&quot;due_date_before_invoice_date&quot;</span><span style="color:#E1E4E8">)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">    return</span><span style="color:#E1E4E8"> issues</span></span></code></pre>
+<p>Validation should not be hidden inside the prompt. Business rules belong in code where they can be tested.</p>
+<h2 id="step-6-score-confidence-by-field-and-by-document">Step 6: score confidence by field and by document</h2>
+<p>One global confidence score is not enough. A pipeline may extract the vendor name confidently but be uncertain about payment terms.</p>
+<p>Use field-level confidence:</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="json"><code><span class="line"><span style="color:#E1E4E8">{</span></span>
+<span class="line"><span style="color:#79B8FF">  &quot;vendor_name&quot;</span><span style="color:#E1E4E8">: { </span><span style="color:#79B8FF">&quot;confidence&quot;</span><span style="color:#E1E4E8">: </span><span style="color:#79B8FF">0.98</span><span style="color:#E1E4E8"> },</span></span>
+<span class="line"><span style="color:#79B8FF">  &quot;invoice_total&quot;</span><span style="color:#E1E4E8">: { </span><span style="color:#79B8FF">&quot;confidence&quot;</span><span style="color:#E1E4E8">: </span><span style="color:#79B8FF">0.91</span><span style="color:#E1E4E8"> },</span></span>
+<span class="line"><span style="color:#79B8FF">  &quot;payment_terms&quot;</span><span style="color:#E1E4E8">: { </span><span style="color:#79B8FF">&quot;confidence&quot;</span><span style="color:#E1E4E8">: </span><span style="color:#79B8FF">0.54</span><span style="color:#E1E4E8"> }</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span></code></pre>
+<p>Then compute a document-level decision:</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="text"><code><span class="line"><span>auto_approve:</span></span>
+<span class="line"><span>  all required fields present</span></span>
+<span class="line"><span>  no blocking validation issues</span></span>
+<span class="line"><span>  required field confidence above threshold</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>needs_review:</span></span>
+<span class="line"><span>  low-confidence required field</span></span>
+<span class="line"><span>  missing evidence</span></span>
+<span class="line"><span>  validation issue</span></span>
+<span class="line"><span>  conflicting extracted values</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>reject:</span></span>
+<span class="line"><span>  unsupported document type</span></span>
+<span class="line"><span>  unreadable document</span></span>
+<span class="line"><span>  required security or policy check failed</span></span></code></pre>
+<p>Confidence should drive routing, not just appear as decoration in the UI.</p>
+<h2 id="step-7-keep-provenance-for-every-important-field">Step 7: keep provenance for every important field</h2>
+<p>Every extracted value should answer:</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="text"><code><span class="line"><span>Where did this come from?</span></span>
+<span class="line"><span>What text supports it?</span></span>
+<span class="line"><span>Which page or section was used?</span></span>
+<span class="line"><span>Was the source reliable enough?</span></span>
+<span class="line"><span>Did validation pass?</span></span></code></pre>
+<p>Provenance is essential for:</p>
+<ul>
+<li>human review</li>
+<li>audit trails</li>
+<li>error analysis</li>
+<li>user trust</li>
+<li>model improvement</li>
+<li>regression testing</li>
+</ul>
+<p>When a reviewer corrects a field, capture the original extraction, source, correction, and reason. That feedback becomes training and evaluation data.</p>
+<h2 id="step-8-design-human-review-as-part-of-the-product">Step 8: design human review as part of the product</h2>
+<p>Human review should not be a fallback screen added at the end. It should be part of the pipeline design.</p>
+<p>Route a document to review when:</p>
+<ul>
+<li>required fields are missing</li>
+<li>evidence is weak</li>
+<li>validation fails</li>
+<li>confidence is below threshold</li>
+<li>the document type is unsupported</li>
+<li>the action has high financial, legal, medical, or operational impact</li>
+</ul>
+<p>A reviewer should see:</p>
+<ul>
+<li>extracted value</li>
+<li>source snippet</li>
+<li>page or section</li>
+<li>confidence</li>
+<li>validation issue</li>
+<li>suggested correction if available</li>
+</ul>
+<p>The goal is not to remove humans from every workflow. The goal is to use automation where it is reliable and route uncertain cases efficiently.</p>
+<h2 id="step-9-evaluate-the-pipeline-not-only-the-model">Step 9: evaluate the pipeline, not only the model</h2>
+<p>Document AI evaluation should be stage-specific.</p>
+<p>Measure:</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Layer</th><th>Metrics</th></tr></thead><tbody><tr><td>Classification</td><td>document type accuracy, unsupported type detection</td></tr><tr><td>Extraction</td><td>field precision, recall, exact match, normalized match</td></tr><tr><td>Validation</td><td>false flags, missed rule violations</td></tr><tr><td>Provenance</td><td>source correctness, snippet relevance</td></tr><tr><td>Routing</td><td>auto-approval precision, review rate</td></tr><tr><td>Operations</td><td>latency, cost, failure rate, retry rate</td></tr></tbody></table>
+<p>Also keep a regression set of hard documents:</p>
+<ul>
+<li>low-quality scans</li>
+<li>unusual layouts</li>
+<li>missing fields</li>
+<li>conflicting values</li>
+<li>long tables</li>
+<li>handwritten additions</li>
+<li>documents from new vendors or sources</li>
+</ul>
+<p>The regression set protects you from silently breaking the cases that matter most.</p>
+<h2 id="a-practical-implementation-pattern">A practical implementation pattern</h2>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="python"><code><span class="line"><span style="color:#F97583">def</span><span style="color:#B392F0"> process_document</span><span style="color:#E1E4E8">(document, pipeline):</span></span>
+<span class="line"><span style="color:#E1E4E8">    parsed </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> pipeline.ingest(document)</span></span>
+<span class="line"><span style="color:#E1E4E8">    classification </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> pipeline.classify(parsed)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E1E4E8">    schema </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> pipeline.schema_for(classification.document_type)</span></span>
+<span class="line"><span style="color:#E1E4E8">    sections </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> pipeline.structure(parsed)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E1E4E8">    extracted </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> pipeline.extract(sections, schema)</span></span>
+<span class="line"><span style="color:#E1E4E8">    normalized </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> pipeline.normalize(extracted, schema)</span></span>
+<span class="line"><span style="color:#E1E4E8">    validation </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> pipeline.validate(normalized, schema)</span></span>
+<span class="line"><span style="color:#E1E4E8">    confidence </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> pipeline.score(normalized, validation)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E1E4E8">    decision </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> pipeline.route(</span></span>
+<span class="line"><span style="color:#FFAB70">        fields</span><span style="color:#F97583">=</span><span style="color:#E1E4E8">normalized,</span></span>
+<span class="line"><span style="color:#FFAB70">        validation</span><span style="color:#F97583">=</span><span style="color:#E1E4E8">validation,</span></span>
+<span class="line"><span style="color:#FFAB70">        confidence</span><span style="color:#F97583">=</span><span style="color:#E1E4E8">confidence,</span></span>
+<span class="line"><span style="color:#E1E4E8">    )</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E1E4E8">    pipeline.trace.write(</span></span>
+<span class="line"><span style="color:#FFAB70">        document_id</span><span style="color:#F97583">=</span><span style="color:#E1E4E8">document.id,</span></span>
+<span class="line"><span style="color:#FFAB70">        classification</span><span style="color:#F97583">=</span><span style="color:#E1E4E8">classification,</span></span>
+<span class="line"><span style="color:#FFAB70">        fields</span><span style="color:#F97583">=</span><span style="color:#E1E4E8">normalized,</span></span>
+<span class="line"><span style="color:#FFAB70">        validation</span><span style="color:#F97583">=</span><span style="color:#E1E4E8">validation,</span></span>
+<span class="line"><span style="color:#FFAB70">        confidence</span><span style="color:#F97583">=</span><span style="color:#E1E4E8">confidence,</span></span>
+<span class="line"><span style="color:#FFAB70">        decision</span><span style="color:#F97583">=</span><span style="color:#E1E4E8">decision,</span></span>
+<span class="line"><span style="color:#E1E4E8">    )</span></span>
 <span class="line"></span>
 <span class="line"><span style="color:#F97583">    return</span><span style="color:#E1E4E8"> {</span></span>
-<span class="line"><span style="color:#9ECBFF">        &quot;fields&quot;</span><span style="color:#E1E4E8">: fields,</span></span>
-<span class="line"><span style="color:#9ECBFF">        &quot;issues&quot;</span><span style="color:#E1E4E8">: issues,</span></span>
+<span class="line"><span style="color:#9ECBFF">        &quot;fields&quot;</span><span style="color:#E1E4E8">: normalized,</span></span>
+<span class="line"><span style="color:#9ECBFF">        &quot;validation&quot;</span><span style="color:#E1E4E8">: validation,</span></span>
 <span class="line"><span style="color:#9ECBFF">        &quot;confidence&quot;</span><span style="color:#E1E4E8">: confidence,</span></span>
+<span class="line"><span style="color:#9ECBFF">        &quot;decision&quot;</span><span style="color:#E1E4E8">: decision,</span></span>
 <span class="line"><span style="color:#E1E4E8">    }</span></span></code></pre>
-<p>Each function should return not just data but also the logic trail—where values came from, what checks passed or failed, and what uncertainty remains.</p>
-<h2 id="production-requires-observability">Production requires observability</h2>
-<p>Reliability emerges from transparency. At each stage, the system needs to show:</p>
-<ul>
-<li>Where extracted values originated (which part of the document, what model confidence)</li>
-<li>Which validation rules passed and which failed</li>
-<li>Why the final confidence score is what it is</li>
-<li>Which cases need human review</li>
-</ul>
-<p>Without this information, you can’t improve the system, audit decisions, or build trust with users who need to act on the results. A human reviewing cases should understand why the system extracted what it did and why validation flagged particular fields.</p>  </div> <div class="article-end" aria-hidden="true" data-astro-cid-gjtny2mx><span data-astro-cid-gjtny2mx>· · ·</span></div> <div class="article-actions" data-astro-cid-gjtny2mx> <button class="share-btn" id="share-btn" type="button" aria-label="Share this article" data-astro-cid-gjtny2mx> <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" data-astro-cid-gjtny2mx><circle cx="18" cy="5" r="3" data-astro-cid-gjtny2mx></circle><circle cx="6" cy="12" r="3" data-astro-cid-gjtny2mx></circle><circle cx="18" cy="19" r="3" data-astro-cid-gjtny2mx></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49" data-astro-cid-gjtny2mx></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" data-astro-cid-gjtny2mx></line></svg>
+<p>This is the difference between a prototype and a production pipeline: every stage has an explicit responsibility, and every important decision leaves a trace.</p>
+<h2 id="the-production-standard">The production standard</h2>
+<p>A reliable document understanding system should be able to answer these questions for every output:</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="text"><code><span class="line"><span>What did we extract?</span></span>
+<span class="line"><span>Where did it come from?</span></span>
+<span class="line"><span>How confident are we?</span></span>
+<span class="line"><span>Which rules passed or failed?</span></span>
+<span class="line"><span>What should happen next?</span></span>
+<span class="line"><span>How do we improve this case if it was wrong?</span></span></code></pre>
+<p>If the system cannot answer those questions, it is not ready to automate a workflow.</p>
+<p>The best document AI systems are not just better at reading. They are better at showing their work.</p>  </div> <div class="article-end" aria-hidden="true" data-astro-cid-gjtny2mx><span data-astro-cid-gjtny2mx>· · ·</span></div> <div class="article-actions" data-astro-cid-gjtny2mx> <button class="share-btn" id="share-btn" type="button" aria-label="Share this article" data-astro-cid-gjtny2mx> <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" data-astro-cid-gjtny2mx><circle cx="18" cy="5" r="3" data-astro-cid-gjtny2mx></circle><circle cx="6" cy="12" r="3" data-astro-cid-gjtny2mx></circle><circle cx="18" cy="19" r="3" data-astro-cid-gjtny2mx></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49" data-astro-cid-gjtny2mx></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" data-astro-cid-gjtny2mx></line></svg>
 Share this note
 </button> <a class="back-link" href="/blog/" data-astro-cid-gjtny2mx> <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" data-astro-cid-gjtny2mx><path d="M13 8H3M8 3 3 8l5 5" data-astro-cid-gjtny2mx></path></svg>
-Back to Blog </a> </div> <aside class="author-card" aria-label="About the author" data-astro-cid-gjtny2mx> <strong data-astro-cid-gjtny2mx>Arman Asgharpoor</strong> <p data-astro-cid-gjtny2mx>Designing production AI systems, extraction pipelines, evaluation frameworks, and infrastructure for real-world deployment.</p> </aside> </div> <script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"Building reliable extraction pipelines for document understanding","description":"How structured validation, confidence scoring, and observability turn document AI from prototype to production.","datePublished":"2026-05-08T00:00:00.000Z","dateModified":"2026-05-08T00:00:00.000Z","author":{"@type":"Person","name":"Arman Asgharpoor","jobTitle":"AI Systems Engineer","description":"Designing production AI systems, extraction pipelines, evaluation frameworks, and infrastructure for real-world deployment.","sameAs":["https://github.com/GinkgoQ","https://www.linkedin.com/company/GinkgoQ","https://huggingface.co/GinkgoQ"]},"publisher":{"@type":"Organization","name":"GinkgoQ","logo":{"@type":"ImageObject","url":"https://ginkgoq.github.io/favicon.svg"}},"image":["https://ginkgoq.github.io//images/og-default.png"],"mainEntityOfPage":{"@type":"WebPage","@id":"https://ginkgoq.github.io//blog/building-reliable-ai-pipelines-for-document-understanding/"}}</script> <aside class="toc" aria-label="Table of contents" data-astro-cid-vaks4sea> <h2 data-astro-cid-vaks4sea>On this page</h2> <ol data-astro-cid-vaks4sea> <li class="depth-2" data-astro-cid-vaks4sea> <a href="#the-real-requirement-structured-data-not-summaries" data-astro-cid-vaks4sea>The real requirement: structured data, not summaries</a> </li><li class="depth-2" data-astro-cid-vaks4sea> <a href="#a-practical-architecture" data-astro-cid-vaks4sea>A practical architecture</a> </li><li class="depth-2" data-astro-cid-vaks4sea> <a href="#production-requires-observability" data-astro-cid-vaks4sea>Production requires observability</a> </li> </ol> </aside> </article>  </main> <footer class="site-footer" role="contentinfo" aria-label="Site footer" data-astro-cid-sz7xmlte> <div class="container" data-astro-cid-sz7xmlte> <div class="footer-inner" data-astro-cid-sz7xmlte> <div class="footer-brand" data-astro-cid-sz7xmlte> <a class="footer-brand-link" href="/" aria-label="GinkgoQ home" data-astro-cid-sz7xmlte> <span class="brand-mark" aria-hidden="true" data-astro-cid-sz7xmlte> <img class="brand-logo" src="/favicon.svg" alt="GinkgoQ mark" data-astro-cid-sz7xmlte> </span> <span class="brand-word" aria-label="GINKGOQ"> <span aria-hidden="true">G</span><span aria-hidden="true">I</span><span aria-hidden="true">N</span><span aria-hidden="true">K</span><span aria-hidden="true">G</span><span aria-hidden="true">O</span><span class="brand-q" aria-hidden="true">Q</span> </span> </a> <p class="footer-brand-desc" data-astro-cid-sz7xmlte>Technical writing and engineering insights for building production AI systems. We share what we learn about extraction, evaluation, and real-world deployment.</p> <div class="footer-social" aria-label="Social links" data-astro-cid-sz7xmlte> <a class="footer-social-link" href="https://github.com/GinkgoQ" target="_blank" rel="noopener" aria-label="GitHub" data-astro-cid-sz7xmlte> <span class="footer-social-icon" data-astro-cid-sz7xmlte>
+Back to Blog </a> </div> <aside class="author-card" aria-label="About the author" data-astro-cid-gjtny2mx> <strong data-astro-cid-gjtny2mx>Arman Asgharpoor</strong> <p data-astro-cid-gjtny2mx>Designing production AI systems, extraction pipelines, evaluation frameworks, and infrastructure for real-world deployment.</p> </aside> </div> <script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"Building Reliable Extraction Pipelines for Document Understanding","description":"A practical guide to designing document AI pipelines with structured extraction, validation, confidence scoring, provenance, human review, and production observability.","datePublished":"2026-05-08T00:00:00.000Z","dateModified":"2026-05-08T00:00:00.000Z","author":{"@type":"Person","name":"Arman Asgharpoor","jobTitle":"AI Systems Engineer","description":"Designing production AI systems, extraction pipelines, evaluation frameworks, and infrastructure for real-world deployment.","sameAs":["https://github.com/GinkgoQ","https://www.linkedin.com/company/GinkgoQ","https://huggingface.co/GinkgoQ"]},"publisher":{"@type":"Organization","name":"GinkgoQ","logo":{"@type":"ImageObject","url":"https://ginkgoq.github.io/favicon.svg"}},"image":["https://ginkgoq.github.io//images/og-default.png"],"mainEntityOfPage":{"@type":"WebPage","@id":"https://ginkgoq.github.io//blog/building-reliable-ai-pipelines-for-document-understanding/"}}</script> <aside class="toc" aria-label="Table of contents" data-astro-cid-vaks4sea> <h2 data-astro-cid-vaks4sea>On this page</h2> <ol data-astro-cid-vaks4sea> <li class="depth-2" data-astro-cid-vaks4sea> <a href="#the-real-output-is-structured-data" data-astro-cid-vaks4sea>The real output is structured data</a> </li><li class="depth-2" data-astro-cid-vaks4sea> <a href="#a-reliable-pipeline-has-observable-stages" data-astro-cid-vaks4sea>A reliable pipeline has observable stages</a> </li><li class="depth-2" data-astro-cid-vaks4sea> <a href="#step-1-classify-the-document-before-extracting-fields" data-astro-cid-vaks4sea>Step 1: classify the document before extracting fields</a> </li><li class="depth-2" data-astro-cid-vaks4sea> <a href="#step-2-preserve-document-structure" data-astro-cid-vaks4sea>Step 2: preserve document structure</a> </li><li class="depth-2" data-astro-cid-vaks4sea> <a href="#step-3-extract-with-a-schema-not-a-wish" data-astro-cid-vaks4sea>Step 3: extract with a schema, not a wish</a> </li><li class="depth-2" data-astro-cid-vaks4sea> <a href="#step-4-normalize-values-before-validation" data-astro-cid-vaks4sea>Step 4: normalize values before validation</a> </li><li class="depth-2" data-astro-cid-vaks4sea> <a href="#step-5-validate-against-rules" data-astro-cid-vaks4sea>Step 5: validate against rules</a> </li><li class="depth-2" data-astro-cid-vaks4sea> <a href="#step-6-score-confidence-by-field-and-by-document" data-astro-cid-vaks4sea>Step 6: score confidence by field and by document</a> </li><li class="depth-2" data-astro-cid-vaks4sea> <a href="#step-7-keep-provenance-for-every-important-field" data-astro-cid-vaks4sea>Step 7: keep provenance for every important field</a> </li><li class="depth-2" data-astro-cid-vaks4sea> <a href="#step-8-design-human-review-as-part-of-the-product" data-astro-cid-vaks4sea>Step 8: design human review as part of the product</a> </li><li class="depth-2" data-astro-cid-vaks4sea> <a href="#step-9-evaluate-the-pipeline-not-only-the-model" data-astro-cid-vaks4sea>Step 9: evaluate the pipeline, not only the model</a> </li><li class="depth-2" data-astro-cid-vaks4sea> <a href="#a-practical-implementation-pattern" data-astro-cid-vaks4sea>A practical implementation pattern</a> </li><li class="depth-2" data-astro-cid-vaks4sea> <a href="#the-production-standard" data-astro-cid-vaks4sea>The production standard</a> </li> </ol> </aside> </article>  </main> <footer class="site-footer" role="contentinfo" aria-label="Site footer" data-astro-cid-sz7xmlte> <div class="container" data-astro-cid-sz7xmlte> <div class="footer-inner" data-astro-cid-sz7xmlte> <div class="footer-brand" data-astro-cid-sz7xmlte> <a class="footer-brand-link" href="/" aria-label="GinkgoQ home" data-astro-cid-sz7xmlte> <span class="brand-mark" aria-hidden="true" data-astro-cid-sz7xmlte> <img class="brand-logo" src="/favicon.svg" alt="GinkgoQ mark" data-astro-cid-sz7xmlte> </span> <span class="brand-word" aria-label="GINKGOQ"> <span aria-hidden="true">G</span><span aria-hidden="true">I</span><span aria-hidden="true">N</span><span aria-hidden="true">K</span><span aria-hidden="true">G</span><span aria-hidden="true">O</span><span class="brand-q" aria-hidden="true">Q</span> </span> </a> <p class="footer-brand-desc" data-astro-cid-sz7xmlte>Technical writing and engineering insights for building production AI systems. We share what we learn about extraction, evaluation, and real-world deployment.</p> <div class="footer-social" aria-label="Social links" data-astro-cid-sz7xmlte> <a class="footer-social-link" href="https://github.com/GinkgoQ" target="_blank" rel="noopener" aria-label="GitHub" data-astro-cid-sz7xmlte> <span class="footer-social-icon" data-astro-cid-sz7xmlte>
       <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true">
         <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0 1 12 6.844a9.59 9.59 0 0 1 2.504.337c1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.02 10.02 0 0 0 22 12.017C22 6.484 17.522 2 12 2Z" />
       </svg>
@@ -43,4 +448,4 @@ Back to Blog </a> </div> <aside class="author-card" aria-label="About the author
         <rect x="3" y="5" width="18" height="14" rx="2" />
         <path d="M3 7l9 6 9-6" />
       </svg>
-    </span> <span class="sr-only" data-astro-cid-sz7xmlte>Email</span> </a> </div> </div> <div class="footer-col" data-astro-cid-sz7xmlte> <span class="footer-col-heading" data-astro-cid-sz7xmlte>Navigate</span> <ul class="footer-nav-list" data-astro-cid-sz7xmlte> <li data-astro-cid-sz7xmlte><a href="/start-here/" data-astro-cid-sz7xmlte>Start here</a></li><li data-astro-cid-sz7xmlte><a href="/blog/" data-astro-cid-sz7xmlte>Blog</a></li><li data-astro-cid-sz7xmlte><a href="/research-notes/" data-astro-cid-sz7xmlte>Research Notes</a></li><li data-astro-cid-sz7xmlte><a href="/roadmap/" data-astro-cid-sz7xmlte>Roadmap</a></li> </ul> </div> <div class="footer-col" data-astro-cid-sz7xmlte> <span class="footer-col-heading" style="visibility: hidden;" data-astro-cid-sz7xmlte>Navigate</span> <ul class="footer-nav-list" data-astro-cid-sz7xmlte> <li data-astro-cid-sz7xmlte><a href="/about/" data-astro-cid-sz7xmlte>About</a></li><li data-astro-cid-sz7xmlte><a href="/rss.xml" data-astro-cid-sz7xmlte>RSS</a></li><li data-astro-cid-sz7xmlte><a href="mailto:ai-team@ginkgoq.com" data-astro-cid-sz7xmlte>Contact</a></li> </ul> </div> <div class="footer-col" data-astro-cid-sz7xmlte> <span class="footer-col-heading" data-astro-cid-sz7xmlte>Topics</span> <div class="footer-tag-cloud" data-astro-cid-sz7xmlte> <a href="/blog/?tag=AI%20Systems" data-astro-cid-sz7xmlte>AI Systems</a><a href="/blog/?tag=Production%20Infrastructure" data-astro-cid-sz7xmlte>Production Infrastructure</a><a href="/blog/?tag=Extraction%20%26%20Validation" data-astro-cid-sz7xmlte>Extraction &amp; Validation</a><a href="/blog/?tag=Evaluation%20%26%20Benchmarks" data-astro-cid-sz7xmlte>Evaluation &amp; Benchmarks</a><a href="/blog/?tag=Real-World%20Deployment" data-astro-cid-sz7xmlte>Real-World Deployment</a><a href="/blog/?tag=System%20Architecture" data-astro-cid-sz7xmlte>System Architecture</a><a href="/blog/?tag=Technical%20Analysis" data-astro-cid-sz7xmlte>Technical Analysis</a> </div> </div> </div> <div class="footer-bottom" data-astro-cid-sz7xmlte> <div class="footer-bottom-inner" data-astro-cid-sz7xmlte> <span data-astro-cid-sz7xmlte>© 2026 GinkgoQ. All rights reserved.</span> <div class="footer-bottom-right" data-astro-cid-sz7xmlte> <a href="mailto:ai-team@ginkgoq.com" data-astro-cid-sz7xmlte>ai-team@ginkgoq.com</a> <span class="footer-sep" aria-hidden="true" data-astro-cid-sz7xmlte>·</span> <span data-astro-cid-sz7xmlte>Production AI systems for the real world.</span> </div> </div> </div> </div> </footer> </div> </div> <button class="back-to-top" id="back-to-top" type="button" aria-label="Back to top" data-astro-cid-37fxchfa> <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" data-astro-cid-37fxchfa> <path d="m18 15-6-6-6 6" data-astro-cid-37fxchfa></path> </svg> </button> <script>window.__SEARCH_POSTS__ = [{"title":"Why model performance doesn't determine system reliability","description":"Benchmarks measure different things than production. Building trustworthy AI requires evaluation, fallback logic, and system design.","category":"Research Note","date":"2026-05-12T00:00:00.000Z","href":"/research-notes/why-real-world-ai-systems-need-more-than-models/"},{"title":"Building reliable extraction pipelines for document understanding","description":"How structured validation, confidence scoring, and observability turn document AI from prototype to production.","category":"Engineering","date":"2026-05-08T00:00:00.000Z","href":"/blog/building-reliable-ai-pipelines-for-document-understanding/"},{"title":"Beyond RAG: building domain intelligence systems","description":"Retrieval is just the foundation. Production AI systems need extraction, validation, confidence scoring, and domain reasoning.","category":"Research Note","date":"2026-05-04T00:00:00.000Z","href":"/research-notes/from-rag-to-domain-intelligence/"}];</script> <script src="/scripts/ui.js" defer></script> </body> </html> 
+    </span> <span class="sr-only" data-astro-cid-sz7xmlte>Email</span> </a> </div> </div> <div class="footer-col" data-astro-cid-sz7xmlte> <span class="footer-col-heading" data-astro-cid-sz7xmlte>Navigate</span> <ul class="footer-nav-list" data-astro-cid-sz7xmlte> <li data-astro-cid-sz7xmlte><a href="/start-here/" data-astro-cid-sz7xmlte>Start here</a></li><li data-astro-cid-sz7xmlte><a href="/blog/" data-astro-cid-sz7xmlte>Blog</a></li><li data-astro-cid-sz7xmlte><a href="/research-notes/" data-astro-cid-sz7xmlte>Research Notes</a></li><li data-astro-cid-sz7xmlte><a href="/roadmap/" data-astro-cid-sz7xmlte>Roadmap</a></li> </ul> </div> <div class="footer-col" data-astro-cid-sz7xmlte> <span class="footer-col-heading" style="visibility: hidden;" data-astro-cid-sz7xmlte>Navigate</span> <ul class="footer-nav-list" data-astro-cid-sz7xmlte> <li data-astro-cid-sz7xmlte><a href="/about/" data-astro-cid-sz7xmlte>About</a></li><li data-astro-cid-sz7xmlte><a href="/rss.xml" data-astro-cid-sz7xmlte>RSS</a></li><li data-astro-cid-sz7xmlte><a href="mailto:ai-team@ginkgoq.com" data-astro-cid-sz7xmlte>Contact</a></li> </ul> </div> <div class="footer-col" data-astro-cid-sz7xmlte> <span class="footer-col-heading" data-astro-cid-sz7xmlte>Topics</span> <div class="footer-tag-cloud" data-astro-cid-sz7xmlte> <a href="/blog/?tag=AI%20Systems" data-astro-cid-sz7xmlte>AI Systems</a><a href="/blog/?tag=Production%20Infrastructure" data-astro-cid-sz7xmlte>Production Infrastructure</a><a href="/blog/?tag=Extraction%20%26%20Validation" data-astro-cid-sz7xmlte>Extraction &amp; Validation</a><a href="/blog/?tag=Evaluation%20%26%20Benchmarks" data-astro-cid-sz7xmlte>Evaluation &amp; Benchmarks</a><a href="/blog/?tag=Real-World%20Deployment" data-astro-cid-sz7xmlte>Real-World Deployment</a><a href="/blog/?tag=System%20Architecture" data-astro-cid-sz7xmlte>System Architecture</a><a href="/blog/?tag=Technical%20Analysis" data-astro-cid-sz7xmlte>Technical Analysis</a> </div> </div> </div> <div class="footer-bottom" data-astro-cid-sz7xmlte> <div class="footer-bottom-inner" data-astro-cid-sz7xmlte> <span data-astro-cid-sz7xmlte>© 2026 GinkgoQ. All rights reserved.</span> <div class="footer-bottom-right" data-astro-cid-sz7xmlte> <a href="mailto:ai-team@ginkgoq.com" data-astro-cid-sz7xmlte>ai-team@ginkgoq.com</a> <span class="footer-sep" aria-hidden="true" data-astro-cid-sz7xmlte>·</span> <span data-astro-cid-sz7xmlte>Production AI systems for the real world.</span> </div> </div> </div> </div> </footer> </div> </div> <button class="back-to-top" id="back-to-top" type="button" aria-label="Back to top" data-astro-cid-37fxchfa> <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" data-astro-cid-37fxchfa> <path d="m18 15-6-6-6 6" data-astro-cid-37fxchfa></path> </svg> </button> <script>window.__SEARCH_POSTS__ = [{"title":"ASHA Hyperparameter Tuning: A Practical Tutorial for Engineers","description":"A practical guide to the Asynchronous Successive Halving Algorithm for hyperparameter tuning, with rung schedules, promotion logic, worker behavior, failure modes, and production implementation patterns.","category":"Engineering","date":"2026-06-04T00:00:00.000Z","href":"/blog/asha_tutorial/"},{"title":"Designing Evaluation Frameworks for Production AI Systems","description":"How to build AI evaluation frameworks that test routing, retrieval, tool use, grounding, workflow behavior, cost, latency, and production regressions.","category":"Engineering","date":"2026-06-04T00:00:00.000Z","href":"/blog/designing-evaluation-frameworks-for-production-ai-systems/"},{"title":"Agentic AI Architecture, Part 1: How to Design Reliable AI Agents","description":"A practical guide to agentic AI architecture: what AI agents are, where LLMs fit, and how to design reliable agent systems with state, tools, retrieval, guardrails, and evaluation.","category":"Engineering","date":"2026-06-04T00:00:00.000Z","href":"/blog/guide-to-agentic-ai-architecture-part-1/"},{"title":"Agentic AI Architecture, Part 2: Building Production AI Agent Systems","description":"A production playbook for agentic AI systems: orchestration patterns, multi-agent design, retrieval repair, observability, evaluation, cost control, and implementation structure.","category":"Engineering","date":"2026-06-04T00:00:00.000Z","href":"/blog/guide-to-agentic-ai-architecture-part-2/"},{"title":"Production RAG Architecture Beyond Vector Search","description":"How to design production retrieval systems with evidence targets, hybrid search, source-fit scoring, context packing, retrieval repair, and grounding checks.","category":"Engineering","date":"2026-06-04T00:00:00.000Z","href":"/blog/production-rag-retrieval-architecture-beyond-vector-search/"},{"title":"Why Model Performance Does Not Determine System Reliability","description":"Benchmarks are useful, but production AI reliability depends on retrieval quality, validation, observability, fallback behavior, and evaluation across the full system.","category":"Research Note","date":"2026-05-12T00:00:00.000Z","href":"/research-notes/why-real-world-ai-systems-need-more-than-models/"},{"title":"Building Reliable Extraction Pipelines for Document Understanding","description":"A practical guide to designing document AI pipelines with structured extraction, validation, confidence scoring, provenance, human review, and production observability.","category":"Engineering","date":"2026-05-08T00:00:00.000Z","href":"/blog/building-reliable-ai-pipelines-for-document-understanding/"},{"title":"From RAG to Domain Intelligence","description":"Why retrieval-augmented generation is only the first layer of production AI, and how extraction, validation, provenance, and domain reasoning turn retrieved text into usable intelligence.","category":"Research Note","date":"2026-05-04T00:00:00.000Z","href":"/research-notes/from-rag-to-domain-intelligence/"}];</script> <script src="/scripts/ui.js" defer></script> </body> </html> 

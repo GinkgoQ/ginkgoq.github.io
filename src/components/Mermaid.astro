@@ -1,0 +1,156 @@
+---
+type Props = {
+  chart: string;
+  title?: string;
+};
+
+const { chart, title } = Astro.props;
+---
+
+<figure class="mermaid-figure">
+  {title && <figcaption>{title}</figcaption>}
+  <pre class="mermaid">{chart.trim()}</pre>
+</figure>
+
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+
+  const isDark = document.documentElement.dataset.theme === "dark";
+  const themeVariables = isDark
+    ? {
+        background: "#14161e",
+        mainBkg: "#1a1d28",
+        secondBkg: "#222638",
+        tertiaryColor: "#202433",
+        primaryColor: "#1a1d28",
+        primaryTextColor: "#eceef8",
+        primaryBorderColor: "#79863c",
+        secondaryColor: "#202433",
+        secondaryTextColor: "#eceef8",
+        secondaryBorderColor: "#2a2f43",
+        clusterBkg: "#14161e",
+        clusterBorder: "#2a2f43",
+        edgeLabelBackground: "#14161e",
+        lineColor: "#79863c",
+        textColor: "#eceef8",
+        nodeTextColor: "#eceef8",
+        fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif",
+      }
+    : {
+        background: "#fafaf8",
+        mainBkg: "#ffffff",
+        secondBkg: "#fafaf8",
+        tertiaryColor: "#f3f3ef",
+        primaryColor: "#ffffff",
+        primaryTextColor: "#101114",
+        primaryBorderColor: "#79863c",
+        secondaryColor: "#fafaf8",
+        secondaryTextColor: "#101114",
+        secondaryBorderColor: "#d8d8cf",
+        clusterBkg: "#fafaf8",
+        clusterBorder: "#d8d8cf",
+        edgeLabelBackground: "#ffffff",
+        lineColor: "#79863c",
+        textColor: "#101114",
+        nodeTextColor: "#101114",
+        fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif",
+      };
+
+  if (!window.__ginkgoqMermaidReady) {
+    window.__ginkgoqMermaidReady = true;
+    mermaid.initialize({
+      startOnLoad: false,
+      securityLevel: "strict",
+      theme: "base",
+      themeVariables,
+    });
+  }
+
+  await mermaid.run({ querySelector: ".mermaid" });
+</script>
+
+<style>
+  .mermaid-figure {
+    margin: 2rem 0;
+    padding: 1rem;
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface-2);
+    overflow-x: auto;
+    transition: background-color 240ms var(--ease), border-color 240ms var(--ease);
+  }
+
+  .mermaid-figure figcaption {
+    margin: 0 0 0.85rem;
+    color: var(--color-subtle);
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .mermaid {
+    min-width: 620px;
+    margin: 0;
+    background: transparent;
+  }
+
+  .mermaid :global(svg) {
+    display: block;
+    max-width: none;
+    color: var(--color-text);
+  }
+
+  .mermaid :global(.node rect),
+  .mermaid :global(.node circle),
+  .mermaid :global(.node ellipse),
+  .mermaid :global(.node polygon),
+  .mermaid :global(.node path) {
+    fill: var(--color-surface) !important;
+    stroke: var(--color-accent) !important;
+  }
+
+  .mermaid :global(.cluster rect) {
+    fill: var(--color-surface-2) !important;
+    stroke: var(--color-line) !important;
+  }
+
+  .mermaid :global(.edgePath path),
+  .mermaid :global(.flowchart-link),
+  .mermaid :global(.transition),
+  .mermaid :global(.messageLine0),
+  .mermaid :global(.messageLine1) {
+    stroke: var(--color-accent) !important;
+  }
+
+  .mermaid :global(.arrowheadPath),
+  .mermaid :global(marker path) {
+    fill: var(--color-accent) !important;
+    stroke: var(--color-accent) !important;
+  }
+
+  .mermaid :global(text),
+  .mermaid :global(.label),
+  .mermaid :global(.nodeLabel),
+  .mermaid :global(.edgeLabel),
+  .mermaid :global(.actor),
+  .mermaid :global(.messageText),
+  .mermaid :global(.stateLabel),
+  .mermaid :global(.labelText) {
+    fill: var(--color-text) !important;
+    color: var(--color-text) !important;
+  }
+
+  .mermaid :global(.edgeLabel),
+  .mermaid :global(.edgeLabel p),
+  .mermaid :global(.labelBkg) {
+    background: var(--color-surface-2) !important;
+    fill: var(--color-surface-2) !important;
+  }
+
+  .mermaid :global(.actor) {
+    fill: var(--color-surface) !important;
+    stroke: var(--color-accent) !important;
+  }
+</style>

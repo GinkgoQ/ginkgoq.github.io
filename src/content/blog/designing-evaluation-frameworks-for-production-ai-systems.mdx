@@ -1,0 +1,323 @@
+---
+title: "Designing Evaluation Frameworks for Production AI Systems"
+description: "How to build AI evaluation frameworks that test routing, retrieval, tool use, grounding, workflow behavior, cost, latency, and production regressions."
+date: 2026-06-04
+category: "Engineering"
+tags: ["Evaluation", "Reliability", "Production AI", "AI Systems", "Observability"]
+draft: false
+---
+
+import Mermaid from "../../components/Mermaid.astro";
+
+Evaluation is often treated as a final checklist before launch. In production AI systems, it needs to be part of the architecture.
+
+Models change. Prompts change. Documents change. Users ask questions in ways the test set did not anticipate. Retrieval quality drifts as content grows. Tool schemas evolve. A system that looked reliable last month can quietly regress after a small update.
+
+A good evaluation framework does not only ask, “Was the final answer correct?” It asks where the system succeeded, where it failed, and which layer needs improvement.
+
+<Mermaid
+  title="Layered evaluation model"
+  chart={`
+flowchart TB
+  Input[Input cases] --> Routing[Routing evals]
+  Routing --> State[State evals]
+  State --> Retrieval[Retrieval evals]
+  Retrieval --> Tools[Tool-call evals]
+  Tools --> Grounding[Grounding evals]
+  Grounding --> Workflow[Workflow evals]
+  Workflow --> Release{Release gate}
+  Release -->|pass| Ship[Ship change]
+  Release -->|fail| Fix[Fix failing layer]
+  Fix --> Input
+` }
+/>
+
+## Evaluate the workflow, not just the answer
+
+A production AI system is usually a pipeline:
+
+```text
+user input
+  -> routing
+  -> state update
+  -> retrieval
+  -> tool calls
+  -> validation
+  -> synthesis
+  -> final answer or action
+```
+
+If the final answer is wrong, the cause may be any layer in that pipeline.
+
+Final-answer grading alone hides the failure source. Layered evaluation makes the system debuggable.
+
+| Evaluation layer | Primary question | Typical owner |
+| --- | --- | --- |
+| Routing | Did the request enter the right workflow? | Product + engineering |
+| State | Did the system preserve the right task memory? | Backend / agent runtime |
+| Retrieval | Did evidence cover the required targets? | Search / ML engineering |
+| Tools | Were tool arguments valid and safe? | Platform engineering |
+| Grounding | Did the answer stay within evidence? | AI engineering |
+| Workflow | Did the task complete reliably and efficiently? | Product + operations |
+
+## The evaluation layers that matter
+
+### Input and routing evals
+
+Routing evals test whether the system understands the task and sends it to the right workflow.
+
+Examples:
+
+```text
+refund question -> support_refund workflow
+contract clause question -> document_review workflow
+follow-up question -> same active workflow
+unclear request -> clarification
+```
+
+Routing failures are expensive because every later step may be technically correct for the wrong workflow.
+
+### State evals
+
+State evals test whether the system remembers the right compact facts across turns.
+
+Check:
+
+- active workflow
+- workflow stage
+- known facts
+- unknown critical fields
+- handoff eligibility
+- last evidence IDs
+- summary quality
+
+Good state prevents repeated questions and wrong handoffs.
+
+### Retrieval evals
+
+Retrieval evals measure whether the system finds the right evidence.
+
+Track:
+
+| Metric | Purpose |
+| --- | --- |
+| Recall | Did we find the needed source? |
+| Precision | How much retrieved context was actually useful? |
+| Source-fit | Did the evidence match the task? |
+| Target coverage | Were all required evidence targets supported? |
+| Duplicate rate | Are we wasting context on repeated chunks? |
+| Empty result rate | How often does retrieval fail to find anything useful? |
+
+For production systems, target coverage is often more useful than generic top-k relevance.
+
+### Tool-call evals
+
+Tool-call evals check whether the model uses tools correctly.
+
+Test:
+
+- correct tool selected
+- required arguments present
+- IDs valid
+- date ranges correct
+- permissions respected
+- destructive actions blocked
+- retry behavior bounded
+
+Tool-call failures should be caught before tools execute, not discovered after a bad action.
+
+### Grounding evals
+
+Grounding evals test whether final claims are supported by approved evidence.
+
+Ask:
+
+```text
+Is each important claim supported?
+Did the answer use the right source?
+Did it omit a required caveat?
+Did it make an unsupported recommendation?
+Did it treat missing evidence as negative evidence?
+```
+
+Grounding is especially important in document AI, policy QA, healthcare, finance, legal, and compliance workflows.
+
+### Workflow evals
+
+Workflow evals measure the actual user journey.
+
+Track:
+
+- task completion rate
+- number of turns
+- repeated question rate
+- wrong handoff rate
+- human review rate
+- tool failure recovery
+- latency
+- cost
+- user correction rate
+
+This is where production quality becomes visible.
+
+## Build a regression set from real failures
+
+The best evaluation data often comes from failure analysis.
+
+When the system fails, capture:
+
+- the user input
+- current state
+- retrieved evidence
+- tool calls
+- final answer
+- expected behavior
+- failure category
+- corrected output
+
+Then add it to a regression set.
+
+Useful regression categories:
+
+```text
+ambiguous input
+missing information
+wrong workflow
+weak retrieval
+conflicting sources
+unsupported claim
+tool argument error
+low-confidence case
+policy exception
+human review required
+```
+
+Regression tests prevent the same mistake from returning after prompt changes, model upgrades, schema edits, or retrieval tuning.
+
+## Use gold labels where they matter
+
+Not every eval needs expensive labeling. But high-impact workflows need clear expected outputs.
+
+Use gold labels for:
+
+- routing decisions
+- required fields
+- known evidence sources
+- validation outcomes
+- final allowed claims
+- human review decisions
+
+Example:
+
+```json
+{
+  "input": "Can this enterprise customer get a refund after 45 days?",
+  "expected_workflow": "support_refund",
+  "required_evidence_targets": [
+    "standard_refund_policy",
+    "enterprise_exception_policy",
+    "customer_tier",
+    "purchase_date"
+  ],
+  "expected_decision": "eligible_for_exception_review"
+}
+```
+
+The label should describe the system behavior, not only the final wording.
+
+## Separate automatic graders from human review
+
+Automatic graders are useful for scale. Human review is useful for judgment.
+
+Use automatic checks for:
+
+- schema validity
+- required fields
+- exact-match values
+- citation presence
+- tool-call constraints
+- latency and cost thresholds
+- retrieval target coverage
+
+Use human review for:
+
+- answer usefulness
+- nuanced reasoning
+- policy interpretation
+- tone and clarity
+- edge cases with business impact
+- new failure types
+
+The goal is not to automate all evaluation. The goal is to put human effort where it gives the most signal.
+
+## Track quality with a dashboard
+
+A production evaluation dashboard should show both quality and operations.
+
+Minimum metrics:
+
+```text
+routing accuracy
+retrieval coverage
+grounded answer rate
+unsupported claim rate
+human review rate
+average latency
+average cost
+tool failure rate
+regression pass rate
+```
+
+Segment metrics by workflow, model version, prompt version, document type, customer group, and time period.
+
+Overall averages hide important failures. A system can look healthy globally while one workflow is degrading.
+
+## Evaluation should block unsafe releases
+
+Treat evals like tests.
+
+Before releasing a change:
+
+- run routing evals
+- run retrieval evals
+- run grounding evals
+- run regression cases
+- compare cost and latency
+- inspect changed failure categories
+
+If a prompt improves one workflow but breaks another, the release should not ship silently.
+
+<Mermaid
+  title="Evaluation-driven release flow"
+  chart={`
+flowchart LR
+  Change[Prompt, model, schema, or retrieval change] --> Suite[Run eval suite]
+  Suite --> Compare[Compare against baseline]
+  Compare --> Gate{Quality gate}
+  Gate -->|quality up / cost acceptable| Deploy[Deploy]
+  Gate -->|regression| Block[Block release]
+  Block --> Triage[Triage failing layer]
+  Triage --> Patch[Patch and retest]
+  Patch --> Suite
+  Deploy --> Monitor[Monitor production traces]
+  Monitor --> Cases[New hard cases]
+  Cases --> Suite
+` }
+/>
+
+## The practical standard
+
+A good evaluation framework should answer:
+
+```text
+Did the system choose the right workflow?
+Did it retrieve enough evidence?
+Did it call tools correctly?
+Did it validate outputs?
+Did it avoid unsupported claims?
+Did it handle uncertainty?
+Did cost or latency regress?
+Did known hard cases still pass?
+```
+
+Evaluation is not a report card. It is the feedback loop that turns an AI prototype into an engineered system.

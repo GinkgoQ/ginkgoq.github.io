@@ -1,0 +1,358 @@
+---
+title: "Production RAG Architecture Beyond Vector Search"
+description: "How to design production retrieval systems with evidence targets, hybrid search, source-fit scoring, context packing, retrieval repair, and grounding checks."
+date: 2026-06-04
+category: "Engineering"
+tags: ["RAG", "Retrieval", "Domain Intelligence", "Production AI", "Architecture"]
+draft: false
+---
+
+import Mermaid from "../../components/Mermaid.astro";
+
+Vector search is useful. It is not a production RAG architecture by itself.
+
+Many early retrieval-augmented generation systems follow the same pattern: embed the user question, retrieve the top few chunks, place them in the prompt, and ask the model to answer. That can work for simple internal search. It breaks down when the system needs complete evidence, source precision, domain rules, citations, or workflow actions.
+
+Production RAG is not “top-k chunks plus a model.” It is an evidence system.
+
+<Mermaid
+  title="Production RAG dataflow"
+  chart={`
+flowchart LR
+  Q[User request] --> Plan[Evidence target planner]
+  Plan --> Hybrid[Hybrid retrieval]
+  Hybrid --> Fit[Source-fit scoring]
+  Fit --> Fuse[Fusion and dedupe]
+  Fuse --> Expand[Parent / neighbor expansion]
+  Expand --> Coverage{Coverage check}
+  Coverage -->|supported| Pack[Context packing]
+  Coverage -->|partial| Repair[Target-local repair]
+  Repair --> Hybrid
+  Pack --> Synthesis[Grounded synthesis]
+  Synthesis --> Trace[Trace and eval log]
+` }
+/>
+
+## The problem with fixed top-k retrieval
+
+Fixed top-k retrieval assumes one query can find everything the answer needs.
+
+That assumption fails often.
+
+Example question:
+
+```text
+Can this enterprise customer receive a refund after 45 days?
+```
+
+The system may need several different evidence targets:
+
+- standard refund policy
+- enterprise exception policy
+- customer tier
+- purchase date
+- previous refund history
+- approval threshold
+
+One vector query may retrieve a relevant policy paragraph but miss the customer-specific data. The final answer may sound plausible while lacking required evidence.
+
+Production retrieval should ask a more precise question:
+
+```text
+What evidence targets must be covered before the system is allowed to answer?
+```
+
+## Start with evidence targets
+
+Instead of retrieving directly from the user query, first decompose the task.
+
+```json
+{
+  "retrieval_task": "refund_eligibility",
+  "targets": [
+    {
+      "target_id": "standard_policy",
+      "query": "standard refund eligibility window",
+      "must_cover": true,
+      "max_chunks": 3
+    },
+    {
+      "target_id": "enterprise_exception",
+      "query": "enterprise refund exception after standard window",
+      "must_cover": true,
+      "max_chunks": 3
+    },
+    {
+      "target_id": "customer_context",
+      "query": "customer tier purchase date refund history",
+      "must_cover": true,
+      "max_chunks": 4
+    }
+  ]
+}
+```
+
+This lets the system evaluate each target separately:
+
+```text
+standard_policy -> supported
+enterprise_exception -> supported
+customer_context -> missing purchase date
+```
+
+Now the system knows whether it can answer, needs another tool call, or should ask a clarification question.
+
+| Target status | Meaning | Next action |
+| --- | --- | --- |
+| `supported` | Evidence is sufficient for that target | Keep evidence |
+| `partial` | Some evidence exists but a required detail is missing | Repair this target only |
+| `unsupported` | Retrieved sources do not answer the target | Ask, search elsewhere, or route to review |
+| `conflicting` | Sources disagree | surface conflict or apply authority rules |
+
+## Use hybrid retrieval by default
+
+Dense vector search captures semantic similarity. Keyword search captures exact terms, identifiers, names, codes, and domain-specific language. Production systems usually need both.
+
+Hybrid retrieval combines:
+
+```text
+lexical search:
+  exact terms, IDs, rare phrases, product names, clause names
+
+dense retrieval:
+  semantic similarity, paraphrases, conceptual matches
+
+sparse retrieval:
+  learned term weighting and semantic-lexical overlap
+```
+
+The point is not to use every retrieval method available. The point is to generate candidates from complementary signals, then fuse and evaluate them.
+
+<Mermaid
+  title="Hybrid candidate generation"
+  chart={`
+flowchart TD
+  Target[Evidence target] --> Lex[Lexical / BM25]
+  Target --> Dense[Dense vector]
+  Target --> Sparse[Sparse semantic]
+  Lex --> Candidates[Candidate pool]
+  Dense --> Candidates
+  Sparse --> Candidates
+  Candidates --> Fuse[Rank fusion]
+  Fuse --> Dedupe[Deduplicate]
+  Dedupe --> Fit[Source-fit scoring]
+  Fit --> Selected[Selected evidence]
+` }
+/>
+
+## Rank for source fit, not only similarity
+
+Similarity is not the same as usefulness.
+
+A chunk can be semantically similar but wrong for the task because it is:
+
+- outdated
+- from the wrong product
+- from a different jurisdiction
+- too general
+- missing the required exception
+- not authoritative
+- only loosely related
+
+Add source-fit scoring:
+
+```json
+{
+  "chunk_id": "policy:refund:section_4",
+  "similarity_score": 0.83,
+  "source_fit": {
+    "is_current": true,
+    "matches_product": true,
+    "matches_customer_tier": true,
+    "authoritative": true,
+    "supports_target": true
+  }
+}
+```
+
+Source fit is what turns retrieval from “nearby text” into evidence.
+
+## Expand context carefully
+
+Small chunks help retrieval. Larger context helps interpretation.
+
+Use small-to-big retrieval:
+
+```text
+retrieve atomic chunk
+  -> inspect neighboring chunks
+  -> expand to section when useful
+  -> include parent heading
+  -> pack only what supports the target
+```
+
+Do not blindly include entire documents. Context windows are not free, and more text can reduce answer quality by burying the evidence.
+
+Good context packing should preserve:
+
+- source title
+- section path
+- page or paragraph ID
+- relevant snippet
+- neighboring context when needed
+- evidence target mapping
+
+## Deduplicate before synthesis
+
+Retrieval systems often return the same information in many forms.
+
+Duplicate context wastes tokens and can make the answer appear more supported than it really is.
+
+Deduplicate by:
+
+- exact chunk ID
+- parent document section
+- near-duplicate text
+- repeated policy clauses
+- semantically identical snippets
+
+Then keep the strongest source for each evidence target.
+
+## Evaluate coverage before answering
+
+Before synthesis, check whether each required target has enough support.
+
+```json
+{
+  "coverage": [
+    {
+      "target_id": "standard_policy",
+      "status": "supported",
+      "used_chunk_ids": ["policy:refund:4"]
+    },
+    {
+      "target_id": "enterprise_exception",
+      "status": "supported",
+      "used_chunk_ids": ["policy:enterprise:2"]
+    },
+    {
+      "target_id": "customer_context",
+      "status": "partial",
+      "missing": ["purchase_date"]
+    }
+  ],
+  "answer_allowed": false
+}
+```
+
+If coverage is partial, the system should not produce a fully confident answer.
+
+It can:
+
+- ask for missing information
+- call another tool
+- retrieve a more specific target
+- provide a partial answer with clear limits
+- escalate to human review
+
+## Repair only weak targets
+
+When retrieval fails, do not rerun everything.
+
+Bad pattern:
+
+```text
+retrieve all targets
+one target weak
+rerun all retrieval with a bigger top_k
+stuff more context
+hope the answer improves
+```
+
+Better pattern:
+
+```text
+retrieve all targets
+identify weak target
+rewrite query for that target
+retrieve only that target
+reuse validated evidence from other targets
+```
+
+Target-local repair improves stability and reduces cost.
+
+## Ground the final answer in approved evidence
+
+The final model should not see raw retrieval results with no constraints. It should receive approved evidence and clear boundaries.
+
+```json
+{
+  "allowed_claims": [
+    "The standard refund window is 30 days.",
+    "Enterprise accounts may qualify for exception review after 30 days."
+  ],
+  "missing_information": [
+    "The customer's purchase date was not available."
+  ],
+  "forbidden_claims": [
+    "The customer is definitely eligible for a refund."
+  ]
+}
+```
+
+This turns final synthesis into controlled communication instead of unsupported generation.
+
+## Observe retrieval as a system
+
+Log retrieval behavior:
+
+```text
+retrieval task
+targets
+queries
+filters
+candidate counts
+fusion method
+selected chunks
+deduped chunks
+coverage status
+repair attempts
+final evidence IDs
+```
+
+Without these traces, retrieval failures are hard to diagnose. The final answer may be wrong, but the real issue might be query planning, filtering, chunking, ranking, source freshness, or context packing.
+
+## A production RAG pipeline
+
+```text
+user request
+  -> intent and workflow detection
+  -> evidence target planning
+  -> hybrid candidate retrieval
+  -> source-fit scoring
+  -> fusion and deduplication
+  -> parent/neighbor expansion
+  -> target coverage evaluation
+  -> target-local repair if needed
+  -> context packing
+  -> grounded synthesis
+  -> trace and eval logging
+```
+
+This architecture is more work than top-k vector search. It is also much easier to trust.
+
+## The practical standard
+
+A production RAG system should answer:
+
+```text
+What evidence was required?
+Which targets were supported?
+Which sources were used?
+What was missing?
+What repair was attempted?
+Which claims were allowed?
+Why was the final answer safe to produce?
+```
+
+Retrieval is not successful because it returned chunks. Retrieval is successful when it finds enough evidence for the system to act responsibly.

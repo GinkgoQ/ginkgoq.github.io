@@ -1,0 +1,764 @@
+---
+title: "Agentic AI Architecture, Part 2: Building Production AI Agent Systems"
+description: "A production playbook for agentic AI systems: orchestration patterns, multi-agent design, retrieval repair, observability, evaluation, cost control, and implementation structure."
+date: 2026-06-04
+category: "Engineering"
+tags: ["AI Agents", "Agentic AI", "Orchestration", "Evaluation", "Production AI"]
+draft: false
+---
+
+import Mermaid from "../../components/Mermaid.astro";
+
+Part 1 covered the architecture of reliable AI agents: bounded decision-making, structured state, validated tools, shared retrieval, layered guardrails, and traceable final answers.
+
+Part 2 is about implementation.
+
+The goal is not to build the most elaborate agent framework possible. The goal is to build an agent system that can complete useful work, fail safely, expose its reasoning path, and improve through evaluation.
+
+Production agent systems need four things:
+
+```text
+clear orchestration
+observable runtime behavior
+measurable quality
+controlled cost and latency
+```
+
+If one of those is missing, the system may work in demos but become difficult to operate.
+
+<Mermaid
+  title="Implementation pillars"
+  chart={`
+flowchart TD
+  A[Production agent system]
+  A --> O[Clear orchestration]
+  A --> T[Observable runtime]
+  A --> E[Measurable quality]
+  A --> C[Controlled cost and latency]
+  O --> P[Planner-executor]
+  T --> Tr[Traces and metrics]
+  E --> Eval[Layered evals]
+  C --> B[Budgets and model routing]
+` }
+/>
+
+## Start with the smallest orchestration that works
+
+Agentic AI does not always require multi-agent collaboration. Most production workflows should begin with a planner-executor pattern.
+
+```text
+user request
+  -> router
+  -> planner
+  -> runtime
+  -> tools / retrieval
+  -> evaluator
+  -> final synthesizer
+```
+
+This design is easier to test than a group of agents talking to each other. It also gives the engineering team clear places to add logging, validation, and cost controls.
+
+Use more complex orchestration only when the task requires it.
+
+<Mermaid
+  title="Planner-executor default"
+  chart={`
+sequenceDiagram
+  participant User
+  participant Router
+  participant Planner
+  participant Runtime
+  participant Tools
+  participant Evaluator
+  participant Synthesizer
+  User->>Router: request + current state
+  Router->>Planner: selected workflow
+  Planner->>Runtime: structured action packet
+  Runtime->>Runtime: validate action and budget
+  Runtime->>Tools: execute approved calls
+  Tools-->>Runtime: results
+  Runtime->>Evaluator: evidence and tool outputs
+  Evaluator-->>Synthesizer: approved claims
+  Synthesizer-->>User: final answer
+` }
+/>
+
+## Five orchestration patterns worth knowing
+
+### 1. Sequential workflow
+
+Use a sequential workflow when the steps are known and each step depends on the previous one.
+
+```text
+extract
+  -> normalize
+  -> validate
+  -> score confidence
+  -> generate answer
+```
+
+Good fit:
+
+- document extraction
+- intake forms
+- compliance checks
+- report generation
+- structured classification pipelines
+
+Sequential systems are not glamorous, but they are often the most reliable option.
+
+### 2. Planner-executor
+
+Planner-executor is the best default for many agent workflows.
+
+```text
+planner creates action packet
+runtime validates action
+executor runs tools
+synthesizer writes final answer
+```
+
+The planner does not execute anything. It returns a structured decision. The runtime owns execution.
+
+This pattern works well for:
+
+- support agents
+- document analysis
+- research assistants
+- workflow copilots
+- internal operations tools
+
+It keeps the model in the right role: deciding what should happen next, not silently controlling the whole system.
+
+### 3. Parallel tool execution
+
+Use parallel execution when the agent needs independent evidence or independent tool calls.
+
+```text
+planner
+  -> [retrieve policy, query account, inspect document] in parallel
+  -> join results
+  -> evaluate coverage
+  -> synthesize answer
+```
+
+Parallel execution is one of the most practical cost and latency improvements in agentic AI. It avoids the slow loop where the model thinks, calls one tool, waits, thinks again, calls another tool, and repeats.
+
+Good fit:
+
+- multi-source research
+- account plus policy lookup
+- document comparison
+- independent retrieval targets
+- agent workflows with several deterministic tools
+
+The runtime should decide which calls can run in parallel. Do not leave that implicit in free-form model output.
+
+### 4. Handoff routing
+
+Handoff is useful when ownership of the task should move from one workflow to another.
+
+```text
+router
+  -> intake agent
+  -> specialist agent
+  -> final workflow owner
+```
+
+Use handoff when:
+
+- a different toolset is required
+- the workflow stage changes
+- a specialist has a stricter output contract
+- human review becomes necessary
+- the original workflow no longer owns the next step
+
+Handoff should be explicit in state:
+
+```json
+{
+  "handoff_allowed": true,
+  "handoff_target": "contract_risk_review",
+  "handoff_reason": "User moved from clause lookup to risk assessment."
+}
+```
+
+Do not let the model silently change workflows. Silent handoffs are hard to debug and can produce inconsistent behavior.
+
+### 5. Multi-agent orchestration
+
+Multi-agent systems are useful when there is a real division of labor.
+
+Use multiple agents when:
+
+- subtasks require different tools
+- specialists need different prompts and schemas
+- independent work can run in parallel
+- a manager must track progress across subtasks
+- human review belongs at a specific stage
+- outputs need specialist validation before synthesis
+
+Do not use multiple agents when one structured planner can do the job.
+
+The practical rule:
+
+```text
+Multi-agent is an orchestration pattern, not proof of sophistication.
+```
+
+If agents are only chatting with each other, the system is probably more expensive than it needs to be.
+
+<Mermaid
+  title="Choosing an orchestration pattern"
+  chart={`
+flowchart LR
+  Task[Task shape] --> Known{Known fixed steps?}
+  Known -->|yes| Sequential[Sequential workflow]
+  Known -->|no| NeedsTools{Independent tools or evidence?}
+  NeedsTools -->|yes| Parallel[Planner + parallel execution]
+  NeedsTools -->|no| HandoffQ{Different owner needed?}
+  HandoffQ -->|yes| Handoff[Explicit handoff]
+  HandoffQ -->|no| Planner[Planner-executor]
+  Parallel --> Complex{Open-ended and long running?}
+  Complex -->|yes| Magentic[Magentic orchestration]
+  Complex -->|no| Planner
+` }
+/>
+
+## Magentic-style orchestration
+
+Magentic-style systems use a lead orchestrator that creates tasks, assigns work, tracks progress, validates results, and replans when blocked.
+
+```text
+orchestrator
+  -> creates task list
+  -> assigns subtasks
+  -> watches progress
+  -> validates outputs
+  -> repairs failed tasks
+  -> synthesizes final result
+```
+
+This pattern is useful for open-ended work:
+
+- codebase analysis
+- research across many sources
+- data analysis projects
+- long document generation
+- web, file, and code workflows
+- multi-step operations with uncertain paths
+
+It is usually the wrong fit for simple question answering, one retrieval call, or routine API work.
+
+Keep the plan outside the chat transcript:
+
+```json
+{
+  "task_plan": [
+    {
+      "task_id": "inspect_repository",
+      "owner": "code_reader",
+      "depends_on": [],
+      "status": "done"
+    },
+    {
+      "task_id": "run_regression_tests",
+      "owner": "test_runner",
+      "depends_on": ["inspect_repository"],
+      "status": "pending"
+    }
+  ]
+}
+```
+
+External task state makes progress visible. It also lets the system retry, pause, resume, and explain what happened.
+
+## Retrieval repair: fix the weak target, not the whole answer
+
+Agentic systems often fail because retrieval is treated as a single top-k operation. A better approach is to retrieve by evidence target.
+
+Example:
+
+```json
+{
+  "targets": [
+    {
+      "target_id": "refund_policy",
+      "must_cover": true
+    },
+    {
+      "target_id": "customer_purchase_history",
+      "must_cover": true
+    },
+    {
+      "target_id": "exception_rules",
+      "must_cover": false
+    }
+  ]
+}
+```
+
+After retrieval, evaluate each target separately:
+
+```python
+for target in retrieval_targets:
+    evidence = retrieve(target)
+    coverage = evaluate_coverage(target, evidence)
+
+    if coverage == "supported":
+        keep(evidence)
+    elif coverage == "partial":
+        refine_only_this_target(target)
+    else:
+        ask_clarification_or_report_missing_evidence(target)
+```
+
+This is called target-local repair. It avoids rerunning the entire pipeline when only one evidence target is weak.
+
+<Mermaid
+  title="Target-local retrieval repair"
+  chart={`
+flowchart TD
+  Plan[Evidence target plan] --> R1[Retrieve per target]
+  R1 --> C{Coverage check}
+  C -->|all supported| S[Synthesize answer]
+  C -->|one target partial| W[Select weak target]
+  W --> Q[Rewrite query for weak target]
+  Q --> R2[Retrieve only weak target]
+  R2 --> C
+  C -->|missing critical evidence| Ask[Ask clarification or route to review]
+` }
+/>
+
+Bad repair:
+
+```text
+one target fails
+  -> rerun all retrieval
+  -> new context changes the answer
+  -> cost increases
+```
+
+Better repair:
+
+```text
+one target fails
+  -> refine that target only
+  -> reuse validated evidence
+  -> preserve answer stability
+```
+
+This is one of the simplest ways to improve quality without making the whole system slower.
+
+## Observability is not optional
+
+If you cannot trace an agent workflow, you cannot improve it.
+
+A useful trace captures the path from user input to final answer:
+
+```json
+{
+  "trace_id": "tr_001",
+  "session_id": "sess_184",
+  "active_workflow": "support_refund",
+  "planner_model": "planner_model_name",
+  "action": "retrieve_and_call_tools",
+  "state_delta": {},
+  "tool_calls": [],
+  "retrieval_targets": [],
+  "retrieved_chunk_ids": [],
+  "coverage": {},
+  "latency_ms": {},
+  "tokens": {},
+  "cost_usd": {},
+  "errors": [],
+  "final_answer_id": "ans_001"
+}
+```
+
+At minimum, log:
+
+- routing decision
+- planner output
+- state delta
+- tool arguments
+- tool results
+- retrieval targets
+- retrieved evidence IDs
+- validation errors
+- final claims
+- cost and latency
+- user-visible answer
+
+The trace should make failure analysis concrete. “The model answered badly” is not actionable. “The router selected the wrong workflow because the active workflow state was empty” is actionable.
+
+<Mermaid
+  title="Trace data flow"
+  chart={`
+flowchart LR
+  Input[User input] --> Route[Routing event]
+  Route --> State[State delta]
+  State --> Plan[Planner output]
+  Plan --> Calls[Tool and retrieval calls]
+  Calls --> Checks[Validation and coverage]
+  Checks --> Answer[Final answer]
+  Answer --> Store[(Trace store)]
+  Store --> Debug[Debugging]
+  Store --> Evals[Regression evals]
+  Store --> Metrics[Cost and latency metrics]
+` }
+/>
+
+## Evaluation needs more than final-answer grading
+
+Agent evaluation should happen at multiple levels. Final answer quality matters, but it is not enough.
+
+### Routing evals
+
+Test whether the system chooses the right workflow.
+
+```text
+input -> expected workflow
+input + state -> expected workflow
+follow-up -> expected sticky workflow
+```
+
+### Planner evals
+
+Test whether the planner returns valid action packets.
+
+```text
+schema validity
+right action
+right tool selection
+missing critical fields
+clarification quality
+handoff correctness
+```
+
+### Tool argument evals
+
+Test whether tool inputs are correct before the tool runs.
+
+```text
+required fields present
+IDs valid
+permissions respected
+date ranges correct
+query filters correct
+```
+
+### Retrieval evals
+
+Measure whether the retrieval layer finds useful evidence.
+
+```text
+recall
+precision
+source-fit
+target coverage
+duplicate rate
+empty result rate
+context budget usage
+```
+
+### Grounding evals
+
+Test whether final claims are supported by approved evidence.
+
+```text
+claim supported?
+source relevant?
+unsupported claim present?
+citation correct?
+evidence contradicted?
+```
+
+### Workflow evals
+
+Measure the user journey, not just one model call.
+
+```text
+turn count
+wrong handoff rate
+repeated question rate
+tool failure recovery
+latency
+cost
+completion rate
+human review rate
+```
+
+This layered evaluation strategy makes improvement possible. You can identify whether the issue is routing, planning, retrieval, tool execution, synthesis, or policy.
+
+<Mermaid
+  title="Evaluation stack"
+  chart={`
+flowchart TB
+  Workflow[Workflow evals]
+  Grounding[Grounding evals]
+  Retrieval[Retrieval evals]
+  ToolArgs[Tool argument evals]
+  Planner[Planner evals]
+  Routing[Routing evals]
+  Routing --> Planner --> ToolArgs --> Retrieval --> Grounding --> Workflow
+` }
+/>
+
+## Cost and latency control
+
+Most agent cost comes from unnecessary model calls and unnecessary context.
+
+Common waste:
+
+- replaying full chat history
+- always retrieving
+- always running a critic
+- sequential tool calls that could run in parallel
+- verbose tool schemas
+- large context stuffing
+- unbounded multi-agent discussion
+- using the strongest model for simple extraction
+
+Practical controls:
+
+```text
+compact state instead of full history
+one planner call per turn where possible
+parallel independent tools
+retrieve only when evidence is needed
+repair weak targets only
+use smaller models for routing and extraction
+reserve stronger models for planning and synthesis
+cap tool calls and retrieval targets
+cache stable prompts and embeddings
+stream only the final answer
+```
+
+A useful latency model:
+
+```text
+total_latency =
+  planner_call
+  + max(parallel_tool_latencies)
+  + optional_evaluator
+  + final_generation
+```
+
+If tools are sequential, latency becomes:
+
+```text
+planner + tool_1 + tool_2 + tool_3 + final_generation
+```
+
+That difference is large enough to shape the architecture.
+
+## Repository structure for production agents
+
+A practical codebase should separate agents, workflows, tools, retrieval, memory, orchestration, evaluation, and observability.
+
+```text
+app/
+  agents/
+    router.py
+    base.py
+    state.py
+    handoff.py
+
+  workflows/
+    support_refund/
+    document_review/
+    research_assistant/
+    code_review/
+
+  tools/
+    registry.py
+    runtime.py
+    schemas.py
+    validators.py
+    permissions.py
+
+  retrieval/
+    task.py
+    target.py
+    engine.py
+    lexical.py
+    vector.py
+    fusion.py
+    evidence.py
+    context_builder.py
+
+  orchestration/
+    planner.py
+    executor.py
+    dag.py
+    retries.py
+    budgets.py
+
+  memory/
+    session_store.py
+    workflow_state.py
+    summaries.py
+
+  evals/
+    routing/
+    planning/
+    retrieval/
+    grounding/
+    workflows/
+    regression/
+
+  observability/
+    tracing.py
+    metrics.py
+    cost.py
+```
+
+This structure keeps complexity visible. It also prevents the system from turning into a folder of prompts with hidden runtime behavior.
+
+## Recommended object model
+
+Start with a small set of explicit objects.
+
+```python
+@dataclass
+class AgentDecision:
+    action: Literal[
+        "direct_answer",
+        "ask_clarification",
+        "call_tools",
+        "retrieve",
+        "handoff",
+        "finish",
+    ]
+    state_delta: dict
+    tool_calls: list[ToolCall]
+    retrieval_task: RetrievalTask | None
+    clarification_question: str | None
+    handoff_target: str | None
+    handoff_allowed: bool
+    confidence: Literal["low", "medium", "high"]
+```
+
+```python
+@dataclass
+class WorkflowState:
+    active_workflow: str
+    workflow_stage: str
+    known_facts: dict
+    unknown_fields: list[str]
+    last_question: str | None
+    last_evidence_ids: list[str]
+    handoff_allowed: bool
+    handoff_target: str | None
+```
+
+```python
+@dataclass
+class EvidenceTarget:
+    target_id: str
+    text: str
+    queries: list[str]
+    must_cover: bool
+    max_chunks: int
+    preferred_sources: list[str]
+    preferred_sections: list[str]
+```
+
+These objects are not bureaucracy. They are what make the runtime testable.
+
+## Prompt design for agent systems
+
+Prompts should match the role of each model call.
+
+### Controller prompt
+
+The controller prompt should produce structured decisions, not polished prose.
+
+```text
+You are a workflow controller.
+Return only a structured action packet.
+Do not write the final answer.
+Use tools when external data or deterministic operations are needed.
+Ask a clarification only when missing information changes the next action.
+```
+
+### Final answer prompt
+
+The final prompt should use approved evidence and produce a user-facing response.
+
+```text
+Use only approved evidence and tool results.
+Do not invent unsupported claims.
+If evidence is partial, separate supported findings from missing information.
+Write clearly and concisely for the user.
+```
+
+### Tool description
+
+The tool description should shape when and how the model uses the tool.
+
+```text
+This tool retrieves contract clauses by evidence target.
+Use it only when the planner has created a retrieval target.
+Return clause IDs, section names, snippets, and scores.
+Do not use it to generate the final answer.
+```
+
+Different prompts for different roles reduce confusion. One giant prompt is harder to test and easier to break.
+
+## Human review belongs in the architecture
+
+Some workflows need human review. Treat it as a first-class state, not an afterthought.
+
+Use human review when:
+
+- the action has financial, legal, medical, or security impact
+- the system lacks enough evidence
+- the tool result conflicts with policy
+- the user requests a destructive action
+- the confidence score is below threshold
+- auditability is required
+
+State should show the review reason:
+
+```json
+{
+  "status": "needs_human_review",
+  "review_reason": "Refund exceeds policy threshold and account history is incomplete.",
+  "approved_actions": [],
+  "blocked_actions": ["issue_refund"]
+}
+```
+
+Human review is not a failure. It is a control surface.
+
+## Implementation checklist
+
+Before shipping an agent workflow, confirm:
+
+- the workflow has a clear owner
+- state is structured and persisted
+- planner output is schema-validated
+- tools have narrow permissions
+- retrieval is target-driven
+- weak evidence can be repaired locally
+- final answers use approved evidence
+- traces capture routing, tools, retrieval, and cost
+- evals exist for routing, planning, retrieval, grounding, and workflows
+- cost and latency budgets are enforced
+- human review paths are explicit
+
+## The final standard
+
+A production AI agent should be able to answer three questions about every response:
+
+```text
+Why did we choose this workflow?
+What evidence and tools supported the answer?
+How do we know the system behaved correctly?
+```
+
+If the system cannot answer those questions, it is not ready for serious use.
+
+The best agentic AI systems are not built by adding more agents. They are built by making each decision visible, each tool call bounded, each source traceable, and each failure measurable.

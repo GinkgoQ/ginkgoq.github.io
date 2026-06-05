@@ -1,6 +1,11 @@
 
 export default new Map([
+["src/content/blog/ASHA_TUTORIAL.mdx", () => import("astro:content-layer-deferred-module?astro%3Acontent-layer-deferred-module=&fileName=src%2Fcontent%2Fblog%2FASHA_TUTORIAL.mdx&astroContentModuleFlag=true")],
 ["src/content/blog/building-reliable-ai-pipelines-for-document-understanding.mdx", () => import("astro:content-layer-deferred-module?astro%3Acontent-layer-deferred-module=&fileName=src%2Fcontent%2Fblog%2Fbuilding-reliable-ai-pipelines-for-document-understanding.mdx&astroContentModuleFlag=true")],
+["src/content/blog/designing-evaluation-frameworks-for-production-ai-systems.mdx", () => import("astro:content-layer-deferred-module?astro%3Acontent-layer-deferred-module=&fileName=src%2Fcontent%2Fblog%2Fdesigning-evaluation-frameworks-for-production-ai-systems.mdx&astroContentModuleFlag=true")],
+["src/content/blog/guide-to-agentic-ai-architecture-part-1.mdx", () => import("astro:content-layer-deferred-module?astro%3Acontent-layer-deferred-module=&fileName=src%2Fcontent%2Fblog%2Fguide-to-agentic-ai-architecture-part-1.mdx&astroContentModuleFlag=true")],
+["src/content/blog/guide-to-agentic-ai-architecture-part-2.mdx", () => import("astro:content-layer-deferred-module?astro%3Acontent-layer-deferred-module=&fileName=src%2Fcontent%2Fblog%2Fguide-to-agentic-ai-architecture-part-2.mdx&astroContentModuleFlag=true")],
+["src/content/blog/production-rag-retrieval-architecture-beyond-vector-search.mdx", () => import("astro:content-layer-deferred-module?astro%3Acontent-layer-deferred-module=&fileName=src%2Fcontent%2Fblog%2Fproduction-rag-retrieval-architecture-beyond-vector-search.mdx&astroContentModuleFlag=true")],
 ["src/content/research/from-rag-to-domain-intelligence.mdx", () => import("astro:content-layer-deferred-module?astro%3Acontent-layer-deferred-module=&fileName=src%2Fcontent%2Fresearch%2Ffrom-rag-to-domain-intelligence.mdx&astroContentModuleFlag=true")],
 ["src/content/research/why-real-world-ai-systems-need-more-than-models.mdx", () => import("astro:content-layer-deferred-module?astro%3Acontent-layer-deferred-module=&fileName=src%2Fcontent%2Fresearch%2Fwhy-real-world-ai-systems-need-more-than-models.mdx&astroContentModuleFlag=true")]]);
 		

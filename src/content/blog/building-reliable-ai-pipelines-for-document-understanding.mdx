@@ -1,49 +1,399 @@
 ---
-title: "Building reliable extraction pipelines for document understanding"
-description: "How structured validation, confidence scoring, and observability turn document AI from prototype to production."
+title: "Building Reliable Extraction Pipelines for Document Understanding"
+description: "A practical guide to designing document AI pipelines with structured extraction, validation, confidence scoring, provenance, human review, and production observability."
 date: 2026-05-08
 category: "Engineering"
-tags: ["Documents", "Pipelines", "Production", "Validation"]
+tags: ["Documents", "Extraction", "Pipelines", "Validation", "Production AI"]
 draft: false
 ---
 
-## The real requirement: structured data, not summaries
+import Mermaid from "../../components/Mermaid.astro";
 
-Document AI rarely stops at summarization. In production, teams need extracted entities, normalized values, source references, and confidence scores that actually inform downstream decisions.
+Document AI is often sold as summarization. In production, summarization is usually the least important part.
 
-The challenge isn't extracting information—it's extracting it reliably enough to make automation worthwhile. A system that catches 95% of cases might save work on some documents but create more work on others when errors go undetected.
+Teams need structured fields, normalized values, source references, confidence scores, and clear review paths. A document understanding system is useful only when its output can feed a workflow: approve an invoice, flag a contract risk, route an insurance claim, update a record, or prepare a case for human review.
 
-## A practical architecture
+The hard problem is not extracting something from a document. The hard problem is extracting the right information reliably enough that downstream users can act on it.
 
-The reliable pattern treats extraction as a pipeline of observable stages. Each step produces output that feeds into the next, with validation and confidence signals at each point.
+<Mermaid
+  title="Document understanding dataflow"
+  chart={`
+flowchart LR
+  D[Document] --> I[Ingestion and OCR]
+  I --> C[Document classification]
+  C --> S[Structure parsing]
+  S --> R[Relevant section retrieval]
+  R --> X[Field extraction]
+  X --> N[Normalization]
+  N --> V[Validation rules]
+  V --> Conf[Confidence scoring]
+  Conf --> Decision{Route}
+  Decision -->|safe| Auto[Automation]
+  Decision -->|uncertain| Review[Human review]
+  Decision -->|invalid| Reject[Reject or request correction]
+  Review --> Feedback[Correction feedback]
+  Feedback --> Evals[Regression evals]
+` }
+/>
+
+## The real output is structured data
+
+A production document pipeline should not stop at a fluent paragraph.
+
+Useful output looks more like this:
+
+```json
+{
+  "document_type": "vendor_contract",
+  "fields": {
+    "effective_date": {
+      "value": "2026-07-01",
+      "confidence": 0.94,
+      "source": "section_1.2",
+      "evidence_text": "This Agreement is effective as of July 1, 2026."
+    },
+    "termination_notice_days": {
+      "value": 30,
+      "confidence": 0.88,
+      "source": "section_9.1",
+      "evidence_text": "Either party may terminate with thirty days written notice."
+    }
+  },
+  "validation": {
+    "status": "needs_review",
+    "issues": ["Missing governing law field"]
+  }
+}
+```
+
+This kind of output can be inspected, validated, stored, searched, audited, and improved. A summary cannot do all of that.
+
+## A reliable pipeline has observable stages
+
+Treat document understanding as a pipeline, not a single model call.
+
+```text
+ingest document
+  -> classify document type
+  -> split and normalize structure
+  -> retrieve relevant sections
+  -> extract fields
+  -> normalize values
+  -> validate against rules
+  -> score confidence
+  -> route to automation or review
+  -> log evidence and decisions
+```
+
+Each stage should produce an artifact that can be inspected. If a value is wrong, the team should know whether the issue came from OCR, classification, chunking, retrieval, extraction, normalization, validation, or final presentation.
+
+Without that separation, every failure becomes “the model was wrong,” which is not useful enough for production debugging.
+
+| Stage | Artifact | Failure it reveals |
+| --- | --- | --- |
+| Ingestion | Parsed text, OCR confidence, page map | Bad scan, missing page, OCR corruption |
+| Classification | Document type and confidence | Wrong schema selection |
+| Structure parsing | Sections, tables, headings | Lost context or table boundaries |
+| Extraction | Field values and evidence | Missing or ambiguous data |
+| Normalization | Canonical values | Format conversion errors |
+| Validation | Rule results and issues | Business-rule mismatch |
+| Routing | Automation or review decision | Wrong confidence threshold |
+
+## Step 1: classify the document before extracting fields
+
+Different document types need different schemas.
+
+An invoice, employment agreement, discharge summary, purchase order, and lab report do not share the same extraction targets. If the system extracts from all documents using one generic prompt, it will either miss important fields or invent structure that does not belong.
+
+Start with document classification:
+
+```json
+{
+  "document_type": "invoice",
+  "confidence": 0.97,
+  "candidate_types": ["invoice", "purchase_order"],
+  "requires_human_review": false
+}
+```
+
+Then route to a schema-specific extractor.
+
+This improves accuracy and makes validation possible because each document type has known required fields, optional fields, formats, and business rules.
+
+## Step 2: preserve document structure
+
+Many extraction errors happen because the system treats a document as plain text.
+
+Preserve:
+
+- page numbers
+- section titles
+- table boundaries
+- row and column positions
+- headings and subheadings
+- OCR confidence
+- source coordinates when available
+- parent-child relationships between sections
+
+Structure matters. A number in a pricing table means something different from the same number in a footnote. A date in a signature block means something different from a date in a renewal clause.
+
+Good document AI systems keep enough layout and hierarchy to interpret extracted values in context.
+
+## Step 3: extract with a schema, not a wish
+
+The extractor should return a strict shape.
 
 ```python
-def process_document(document, extractor, validator):
-    # Extract structured fields from the document
-    fields = extractor.extract(document)
+from dataclasses import dataclass
+from typing import Literal
 
-    # Validate against business rules and format requirements
-    issues = validator.check(fields)
+@dataclass
+class ExtractedField:
+    name: str
+    value: str | int | float | None
+    status: Literal["present", "missing", "ambiguous"]
+    confidence: float
+    source_id: str | None
+    evidence_text: str | None
+```
 
-    # Score confidence accounting for validation problems
-    confidence = max(0.0, fields.confidence - 0.12 * len(issues))
+The schema should separate:
+
+- the extracted value
+- whether the field is present, missing, or ambiguous
+- confidence
+- evidence
+- normalization status
+- validation status
+
+Do not force the model to return a value when the document does not support one. Missing and ambiguous are valid production states.
+
+## Step 4: normalize values before validation
+
+Raw extraction is rarely enough.
+
+Examples:
+
+| Raw value | Normalized value |
+| --- | --- |
+| `thirty days` | `30` |
+| `07/01/26` | `2026-07-01` |
+| `$1.2M` | `1200000` |
+| `Net thirty` | `NET_30` |
+| `N/A` | `null` with `status: missing` |
+
+Normalization makes validation consistent. It also prevents downstream systems from having to interpret every format variation.
+
+Keep raw and normalized values:
+
+```json
+{
+  "raw_value": "thirty days",
+  "normalized_value": 30,
+  "normalization_status": "normalized",
+  "normalization_rule": "written_number_to_integer"
+}
+```
+
+## Step 5: validate against rules
+
+Validation turns extraction into a trustworthy system.
+
+Useful validation checks include:
+
+- required fields are present
+- dates are valid and ordered correctly
+- monetary values have currencies
+- totals match line items
+- extracted values match allowed enums
+- referenced sections exist
+- values do not contradict each other
+- confidence is high enough for automation
+
+Example:
+
+```python
+def validate_invoice(fields):
+    issues = []
+
+    if not fields.invoice_number.value:
+        issues.append("invoice_number_missing")
+
+    if fields.total.value != sum(item.amount for item in fields.line_items):
+        issues.append("total_does_not_match_line_items")
+
+    if fields.due_date.value and fields.invoice_date.value:
+        if fields.due_date.value < fields.invoice_date.value:
+            issues.append("due_date_before_invoice_date")
+
+    return issues
+```
+
+Validation should not be hidden inside the prompt. Business rules belong in code where they can be tested.
+
+## Step 6: score confidence by field and by document
+
+One global confidence score is not enough. A pipeline may extract the vendor name confidently but be uncertain about payment terms.
+
+Use field-level confidence:
+
+```json
+{
+  "vendor_name": { "confidence": 0.98 },
+  "invoice_total": { "confidence": 0.91 },
+  "payment_terms": { "confidence": 0.54 }
+}
+```
+
+Then compute a document-level decision:
+
+```text
+auto_approve:
+  all required fields present
+  no blocking validation issues
+  required field confidence above threshold
+
+needs_review:
+  low-confidence required field
+  missing evidence
+  validation issue
+  conflicting extracted values
+
+reject:
+  unsupported document type
+  unreadable document
+  required security or policy check failed
+```
+
+Confidence should drive routing, not just appear as decoration in the UI.
+
+## Step 7: keep provenance for every important field
+
+Every extracted value should answer:
+
+```text
+Where did this come from?
+What text supports it?
+Which page or section was used?
+Was the source reliable enough?
+Did validation pass?
+```
+
+Provenance is essential for:
+
+- human review
+- audit trails
+- error analysis
+- user trust
+- model improvement
+- regression testing
+
+When a reviewer corrects a field, capture the original extraction, source, correction, and reason. That feedback becomes training and evaluation data.
+
+## Step 8: design human review as part of the product
+
+Human review should not be a fallback screen added at the end. It should be part of the pipeline design.
+
+Route a document to review when:
+
+- required fields are missing
+- evidence is weak
+- validation fails
+- confidence is below threshold
+- the document type is unsupported
+- the action has high financial, legal, medical, or operational impact
+
+A reviewer should see:
+
+- extracted value
+- source snippet
+- page or section
+- confidence
+- validation issue
+- suggested correction if available
+
+The goal is not to remove humans from every workflow. The goal is to use automation where it is reliable and route uncertain cases efficiently.
+
+## Step 9: evaluate the pipeline, not only the model
+
+Document AI evaluation should be stage-specific.
+
+Measure:
+
+| Layer | Metrics |
+| --- | --- |
+| Classification | document type accuracy, unsupported type detection |
+| Extraction | field precision, recall, exact match, normalized match |
+| Validation | false flags, missed rule violations |
+| Provenance | source correctness, snippet relevance |
+| Routing | auto-approval precision, review rate |
+| Operations | latency, cost, failure rate, retry rate |
+
+Also keep a regression set of hard documents:
+
+- low-quality scans
+- unusual layouts
+- missing fields
+- conflicting values
+- long tables
+- handwritten additions
+- documents from new vendors or sources
+
+The regression set protects you from silently breaking the cases that matter most.
+
+## A practical implementation pattern
+
+```python
+def process_document(document, pipeline):
+    parsed = pipeline.ingest(document)
+    classification = pipeline.classify(parsed)
+
+    schema = pipeline.schema_for(classification.document_type)
+    sections = pipeline.structure(parsed)
+
+    extracted = pipeline.extract(sections, schema)
+    normalized = pipeline.normalize(extracted, schema)
+    validation = pipeline.validate(normalized, schema)
+    confidence = pipeline.score(normalized, validation)
+
+    decision = pipeline.route(
+        fields=normalized,
+        validation=validation,
+        confidence=confidence,
+    )
+
+    pipeline.trace.write(
+        document_id=document.id,
+        classification=classification,
+        fields=normalized,
+        validation=validation,
+        confidence=confidence,
+        decision=decision,
+    )
 
     return {
-        "fields": fields,
-        "issues": issues,
+        "fields": normalized,
+        "validation": validation,
         "confidence": confidence,
+        "decision": decision,
     }
 ```
 
-Each function should return not just data but also the logic trail—where values came from, what checks passed or failed, and what uncertainty remains.
+This is the difference between a prototype and a production pipeline: every stage has an explicit responsibility, and every important decision leaves a trace.
 
-## Production requires observability
+## The production standard
 
-Reliability emerges from transparency. At each stage, the system needs to show:
+A reliable document understanding system should be able to answer these questions for every output:
 
-- Where extracted values originated (which part of the document, what model confidence)
-- Which validation rules passed and which failed
-- Why the final confidence score is what it is
-- Which cases need human review
+```text
+What did we extract?
+Where did it come from?
+How confident are we?
+Which rules passed or failed?
+What should happen next?
+How do we improve this case if it was wrong?
+```
 
-Without this information, you can't improve the system, audit decisions, or build trust with users who need to act on the results. A human reviewing cases should understand why the system extracted what it did and why validation flagged particular fields.
+If the system cannot answer those questions, it is not ready to automate a workflow.
+
+The best document AI systems are not just better at reading. They are better at showing their work.

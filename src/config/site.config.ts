@@ -104,8 +104,8 @@ export const siteConfig = {
 
   pages: {
     home: {
-      title: "GinkgoQ — Production AI systems and engineering insights",
-      description: "Technical writing on building reliable AI systems: extraction pipelines, domain intelligence, evaluation frameworks, and real-world deployment patterns.",
+      title: "GinkgoQ — Engineering guides for production AI systems",
+      description: "Technical writing on agentic AI architecture, document understanding, retrieval, domain intelligence, evaluation, and reliable production AI systems.",
       hero: {
         eyebrow: "GINKGOQ",
         title: "Transform information into intelligence.",
@@ -118,28 +118,28 @@ export const siteConfig = {
           href: "/start-here/",
           number: "00",
           title: "Start here",
-          description: "New to GinkgoQ? Learn what we publish, where to find what you're looking for, and how our content is organized.",
+          description: "New to GinkgoQ? Learn how the writing is organized and which AI systems topics to read first.",
           actionText: "Read the guide",
         },
       {
           href: "/blog/",
           number: "01",
           title: "Blog",
-          description: "In-depth technical guides and engineering case studies on document processing, RAG systems, and production infrastructure.",
+          description: "In-depth guides on agentic AI architecture, document understanding, retrieval, validation, and production engineering.",
           actionText: "Read the blog",
         },
         {
           href: "/research-notes/",
           number: "02",
           title: "Research Notes",
-          description: "Short-form technical analysis: evaluation frameworks, system architecture decisions, and observations on real-world AI challenges.",
+          description: "Focused notes on RAG, domain intelligence, evaluation, reliability, and production AI system design.",
           actionText: "Read the notes",
         },
         {
           href: "/about/",
           number: "03",
           title: "About us",
-          description: "Our approach to deep-tech AI, the problems we focus on, and how we collaborate with teams building the next generation of AI systems.",
+          description: "Our approach to building and writing about reliable AI systems for real production workflows.",
           actionText: "Learn more",
         },
       ],
@@ -148,22 +148,22 @@ export const siteConfig = {
     },
     blog: {
       title: "Blog — GinkgoQ",
-      description: "Technical guides and case studies on document AI, RAG pipelines, evaluation frameworks, production infrastructure, and real-world AI system design.",
-      heroLead: "In-depth technical writing, build logs, and engineering analysis for teams building production AI systems.",
+      description: "Engineering guides on agentic AI, document AI, RAG, validation, evaluation, observability, and production AI architecture.",
+      heroLead: "In-depth technical writing for teams building observable, testable, reliable AI systems.",
     },
     researchNotes: {
       title: "Research Notes — GinkgoQ",
-      description: "Short-form technical analysis on AI system design, evaluation frameworks, and practical approaches to real-world AI challenges.",
-      heroLead: "Focused technical analysis on AI systems architecture and evaluation frameworks.",
+      description: "Focused technical notes on retrieval, domain intelligence, evaluation, reliability, and AI system architecture.",
+      heroLead: "Focused technical analysis on production AI system design, retrieval, and reliability.",
     },
     about: {
       title: "About GinkgoQ",
-      description: "Learn about our team, our approach to AI systems, the problems we're solving, and how we work with technical teams.",
-      lead: "We build practical AI systems and publish what we learn. Our work spans extraction pipelines, evaluation frameworks, and the architectural decisions that make AI production-ready.",
+      description: "Learn about GinkgoQ's approach to production AI systems, agentic architecture, document intelligence, retrieval, validation, and evaluation.",
+      lead: "GinkgoQ focuses on the engineering work around modern AI models: extraction, retrieval, validation, agents, observability, and evaluation. We publish practical system design notes for teams moving from prototypes to reliable production workflows.",
       contactBand: {
         heading: "Let's work together",
         lead: "For technical collaborations, architecture reviews, or questions about our work.",
-        actionText: "ai-team@ginkgoq.com",
+        actionText: "hello@ginkgoq.ai",
       },
     },
   },

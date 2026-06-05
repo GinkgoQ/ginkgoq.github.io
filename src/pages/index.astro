@@ -4,6 +4,7 @@ import SignalGridDots from "../components/SignalGridDots.astro";
 import BrandText from "../components/BrandText.astro";
 import { getCollection } from "astro:content";
 import { siteConfig } from "../config/site.config";
+import { getReadingTimeText } from "../utils/readingTime";
 
 const blogPosts = (await getCollection("blog", ({ data }) => !data.draft)).map((post) => ({
   ...post,
@@ -18,7 +19,12 @@ const researchPosts = (await getCollection("research", ({ data }) => !data.draft
 const allPosts = [...blogPosts, ...researchPosts];
 allPosts.sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
 
-const latestPosts = allPosts.slice(0, 3);
+const latestPosts = await Promise.all(
+  allPosts.slice(0, 3).map(async (post) => ({
+    ...post,
+    readingTimeText: await getReadingTimeText(post.collection, post.id),
+  }))
+);
 const processSteps = [
   {
     title: "Sense",
@@ -54,16 +60,6 @@ const formatDate = (date: Date) =>
     year: "numeric",
   }).format(date);
 
-const getReadTime = (post) => {
-  const rawBody =
-    typeof post.body === "string"
-      ? post.body
-      : typeof post.body?.raw === "string"
-      ? post.body.raw
-      : "";
-  const words = rawBody.trim().split(/\s+/).filter(Boolean).length;
-  return `${Math.max(1, Math.round(words / 220))} min`;
-};
 ---
 
 <BaseLayout title={siteConfig.pages.home.title} description={siteConfig.pages.home.description}>
@@ -90,14 +86,13 @@ const getReadTime = (post) => {
               <span class="step-icon" style={`--icon-url: url("${step.icon}")`} aria-hidden="true"></span>
               <h2>{step.title}</h2>
               <p>
-<p>
-  {(Array.isArray(step.description) ? step.description : [step.description]).map((line, index, lines) => (
-    <>
-      <span>{line}</span>
-      {index < lines.length - 1 && <br />}
-    </>
-  ))}
-</p>
+                {(Array.isArray(step.description) ? step.description : [step.description]).map((line, index, lines) => (
+                  <>
+                    <span>{line}</span>
+                    {index < lines.length - 1 && <br />}
+                  </>
+                ))}
+              </p>
             </article>
           ))}
         </div>
@@ -133,7 +128,7 @@ const getReadTime = (post) => {
             <h3>{post.data.title}</h3>
             <p class="desc">{post.data.description}</p>
           </div>
-          <span class="home-post-read">{getReadTime(post)} read</span>
+          <span class="home-post-read">{post.readingTimeText}</span>
         </a>
       ))}
     </div>

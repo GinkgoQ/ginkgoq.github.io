@@ -1,0 +1,1501 @@
+---
+title: "ASHA Hyperparameter Tuning: A Practical Tutorial for Engineers"
+description: "A practical guide to the Asynchronous Successive Halving Algorithm for hyperparameter tuning, with rung schedules, promotion logic, worker behavior, failure modes, and production implementation patterns."
+date: 2026-06-04
+category: "Engineering"
+tags: ["Hyperparameter Tuning", "ASHA", "Machine Learning", "Optimization", "Production AI"]
+draft: false
+---
+
+import Mermaid from "../../components/Mermaid.astro";
+
+ASHA, the Asynchronous Successive Halving Algorithm, is a scheduler for
+hyperparameter search. It does not invent new hyperparameters. It decides how
+much compute each sampled configuration deserves.
+
+The core idea is simple:
+
+> Start many trials cheaply. Stop weak trials early. Spend most of the budget on
+> configurations that look promising.
+
+That sentence is easy to understand and easy to implement badly. A correct ASHA
+implementation must handle delayed metrics, noisy validation curves, worker
+availability, promotion races, failed trials, ties, and the fact that early
+performance is often a biased signal of final performance.
+
+This tutorial explains ASHA from first principles, then builds an
+implementation-oriented version that is close to what you need in a real tuning
+system.
+
+<Mermaid
+  title="ASHA as a resource allocation loop"
+  chart={`
+flowchart LR
+  Space[Search space] --> Sample[Sample trial configs]
+  Sample --> Workers[Run trials on workers]
+  Workers --> Metrics[Report intermediate metrics]
+  Metrics --> Rungs[Update rung tables]
+  Rungs --> Decision{Promotable?}
+  Decision -->|yes| Continue[Continue to next resource]
+  Decision -->|no| Stop[Stop trial and free worker]
+  Continue --> Workers
+  Stop --> Sample
+  Rungs --> Final[Select final candidates]
+  classDef accent fill:#79863c,color:#fff,stroke:#79863c;
+  class Rungs,Decision,Final accent;
+` }
+/>
+
+---
+
+## 1. The Problem ASHA Solves
+
+Hyperparameter tuning is a resource allocation problem.
+
+You usually have:
+
+- a search space: learning rate, weight decay, model size, augmentation strength
+- an objective: validation loss, error, reward, latency-adjusted score
+- a budget: GPU hours, CPU hours, wall time, money
+- many configurations whose quality is unknown before training
+
+The naive strategies waste compute in different ways.
+
+| Method | What it does | Main waste |
+|---|---|---|
+| Grid search | Tries a Cartesian product | Spends budget on unimportant dimensions and bad combinations |
+| Random search | Samples independent configurations | Still trains bad trials too long |
+| Full training for every trial | Fair but expensive | Uses maximum budget before learning anything |
+| Synchronous Successive Halving | Trains a cohort, ranks it, promotes the top fraction | Fast workers wait for slow workers |
+
+ASHA attacks the last two problems:
+
+1. Most configurations are bad enough to identify early.
+2. Synchronous barriers waste wall time when trials run at different speeds.
+
+ASHA keeps the aggressive early-stopping idea from Successive Halving, but
+removes the synchronization barrier.
+
+```text
+Random search:
+
+trial A  ============================= full budget
+trial B  ============================= full budget
+trial C  ============================= full budget
+trial D  ============================= full budget
+
+ASHA:
+
+trial A  ===== stop
+trial B  ===== stop
+trial C  ===== ===== ===== continue
+trial D  ===== stop
+trial E  ===== ===== continue
+trial F  ===== stop
+```
+
+ASHA is useful when partial learning curves are informative enough that early
+rankings correlate with later rankings. They do not need to be perfect. They
+need to be useful more often than random.
+
+| Question | ASHA answer |
+|---|---|
+| What is being optimized? | A validation metric, reward, error rate, latency-adjusted score, or another objective reported during training. |
+| What is being allocated? | A monotonic resource such as epochs, optimizer steps, tokens, examples, or environment interactions. |
+| What does ASHA save? | Wall-clock time and compute by stopping weak configurations before they consume the full budget. |
+| What can ASHA get wrong? | It can stop late-blooming configurations when early metrics are noisy or misleading. |
+
+---
+
+## 2. Core Intuition
+
+Training every trial to completion answers:
+
+> Which configuration is best at maximum resource?
+
+ASHA asks a cheaper sequence of questions:
+
+> Which configurations are clearly not worth more resource yet?
+
+The distinction matters. ASHA is not trying to prove that a trial is bad. It is
+trying to decide whether a trial is good enough to compete for the next slice of
+compute.
+
+At each milestone, called a rung, a trial reports a metric. ASHA compares that
+metric against other trials that reached the same rung. Only the top fraction is
+eligible to continue.
+
+For reduction factor `eta`, roughly `1 / eta` of trials survive each rung.
+
+Example with `eta = 3`:
+
+```text
+Resource per rung:     5 epochs     15 epochs     45 epochs
+Expected survivors:    all          top 1/3       top 1/9
+
+100 trials start
+~33 reach 15 epochs
+~11 reach 45 epochs
+```
+
+This is the central trade:
+
+- more initial diversity
+- less wasted compute on weak trials
+- some risk of killing late bloomers
+
+ASHA is good when early progress is informative and compute is scarce. It is
+dangerous when early metrics are dominated by warmup, noise, or optimizer
+transients.
+
+<Mermaid
+  title="Rung geometry with eta = 3"
+  chart={`
+flowchart LR
+  Start[100 trials start] --> R0[5 epochs\\n100 evaluated]
+  R0 --> R1[15 epochs\\nabout 33 survive]
+  R1 --> R2[45 epochs\\nabout 11 survive]
+  R2 --> R3[135 epochs\\nabout 3 survive]
+  R3 --> Winner[Final shortlist]
+  classDef accent fill:#79863c,color:#fff,stroke:#79863c;
+  class R1,R2,R3,Winner accent;
+` }
+/>
+
+---
+
+## 3. Vocabulary
+
+### Trial
+
+A trial is one sampled hyperparameter configuration plus its training state.
+
+Example:
+
+```json
+{
+  "trial_id": 17,
+  "lr": 0.0007,
+  "weight_decay": 0.0003,
+  "hidden_size": 200,
+  "status": "running"
+}
+```
+
+ASHA does not care how the configuration was sampled. It can come from random
+search, Bayesian optimization, a hand-written grid, or a domain-specific
+generator.
+
+### Resource
+
+Resource is the unit ASHA allocates.
+
+Common choices:
+
+- epochs
+- training steps
+- environment interactions
+- processed tokens
+- processed examples
+- wall-clock seconds
+
+Use a resource that is monotonic and comparable across trials.
+
+For neural networks, epochs are convenient but often imperfect. If datasets,
+batch sizes, or sequence lengths differ between trials, training steps or
+examples processed may be fairer.
+
+### Rung
+
+A rung is a resource milestone.
+
+With:
+
+```text
+grace_period = 5
+reduction_factor = 3
+max_t = 45
+```
+
+the rungs are:
+
+```text
+5, 15, 45
+```
+
+Each rung stores the metric values of trials that reached that milestone.
+
+### Promotion
+
+Promotion means the trial is allowed to continue beyond the current rung.
+
+In many implementations, promotion is not an explicit queue. A running trial
+reaches a rung, reports a metric, and the scheduler decides:
+
+- continue
+- pause
+- stop
+
+ASHA usually stops weak trials instead of pausing them.
+
+### Reduction Factor
+
+The reduction factor `eta` controls how aggressively ASHA prunes trials.
+
+At each rung, only approximately the top `1 / eta` fraction survives.
+
+Common values:
+
+- `eta = 2`: conservative, keeps more trials alive
+- `eta = 3`: common default
+- `eta = 4`: aggressive, useful when early metrics are reliable
+
+### Grace Period
+
+The grace period is the minimum resource any trial receives before it can be
+stopped.
+
+It protects trials from being killed before the metric is meaningful.
+
+Bad grace period:
+
+```text
+epoch 1 metric:
+trial A: terrible because LR warmup just started
+trial B: good because it overfits early
+```
+
+Good grace period:
+
+```text
+first decision happens after warmup and at least one stable validation signal
+```
+
+### Max Resource
+
+`max_t` is the maximum resource ASHA gives to any trial.
+
+It should match the budget at which you actually care about model quality. If
+you will train the final model for 200 epochs, but ASHA only compares trials at
+30 epochs, you are optimizing the wrong objective unless rankings stabilize
+early.
+
+### Bracket
+
+Classic Hyperband uses multiple brackets. Each bracket uses a different
+starting budget and halving schedule.
+
+ASHA is often used as one asynchronous bracket, or as the asynchronous scheduler
+inside Hyperband-style multi-bracket search.
+
+Single-bracket ASHA is simpler and often works well. Multi-bracket ASHA is more
+robust when you are uncertain about how much resource early decisions require.
+
+---
+
+## 4. Successive Halving Before ASHA
+
+Classic Successive Halving is easier to understand.
+
+Given `n` trials:
+
+1. Train all trials for `r` resource.
+2. Rank by validation metric.
+3. Keep the top `1 / eta`.
+4. Increase resource by `eta`.
+5. Repeat until max resource.
+
+Pseudocode:
+
+```python
+trials = sample_trials(n)
+resource = grace_period
+
+while resource <= max_t:
+    for trial in trials:
+        train_until(trial, resource)
+        trial.metric = validate(trial)
+
+    trials = top_fraction(trials, fraction=1 / eta)
+    resource *= eta
+```
+
+The problem is the barrier:
+
+```text
+rung 0:
+fast trial     ===== done, waits
+medium trial   ========= done, waits
+slow trial     ================= done
+
+promotion cannot happen until everyone reaches the barrier
+```
+
+If one trial is slow because it sampled a larger model or hit a noisy worker,
+all other trials wait. This wastes wall time.
+
+ASHA removes that wait.
+
+<Mermaid
+  title="Synchronous halving waits; ASHA reacts"
+  chart={`
+flowchart TB
+  subgraph SH[Successive Halving]
+    SH1[Fast trial reaches rung] --> SH2[Wait for cohort]
+    SH3[Slow trial reaches rung] --> SH2
+    SH2 --> SH4[Rank cohort and promote]
+  end
+  subgraph AS[ASHA]
+    A1[Trial reports metric] --> A2[Update rung table]
+    A2 --> A3{Top fraction?}
+    A3 -->|yes| A4[Continue]
+    A3 -->|no| A5[Stop and reuse worker]
+  end
+  classDef accent fill:#79863c,color:#fff,stroke:#79863c;
+  class SH4,A2,A3,A4 accent;
+` }
+/>
+
+---
+
+## 5. ASHA Step by Step
+
+ASHA keeps rungs, but decisions happen whenever a trial reports.
+
+<Mermaid
+  title="ASHA decision flow"
+  chart={`
+flowchart TD
+  A[Start or resume trial] --> B[Train until next rung]
+  B --> C[Report metric]
+  C --> D{Reached max_t?}
+  D -->|yes| E[Complete trial]
+  D -->|no| F{Metric in top 1 / eta at this rung?}
+  F -->|yes| G[Continue to next rung]
+  F -->|no| H[Stop trial]
+  G --> B
+  classDef accent fill:#79863c,color:#fff,stroke:#79863c;
+  class C,D,F,G accent;
+` }
+/>
+
+The scheduler does not wait for all trials in a cohort. It only uses the data
+available in each rung table at decision time.
+
+### Rung Table
+
+A rung table might look like this:
+
+```text
+rung resource = 5 epochs
+mode = minimize
+eta = 3
+
+trial   metric    decision
+-----   ------    --------
+T03     0.91      stop
+T07     0.64      promote
+T11     0.73      promote
+T14     1.20      stop
+T18     0.67      promote
+T22     0.88      stop
+```
+
+For `eta = 3`, the top third are promotable. With six completed trials at the
+rung, roughly two survive. Real implementations need to define whether they use
+floor, ceil, or at-least-one promotion.
+
+| Rung resource | Records collected | Keep rule with `eta = 3` | Expected action |
+|---:|---:|---:|---|
+| 5 epochs | 27 trials | `floor(27 / 3) = 9` | Stop the weakest 18 trials |
+| 15 epochs | 9 trials | `floor(9 / 3) = 3` | Continue the strongest 3 trials |
+| 45 epochs | 3 trials | `floor(3 / 3) = 1` | Fully evaluate the best candidate |
+
+---
+
+## 6. Core Decision Logic
+
+For a rung with `m` reported trials and reduction factor `eta`, the number of
+promotable trials is commonly:
+
+```text
+k = floor(m / eta)
+```
+
+with a guard:
+
+```text
+k = max(1, floor(m / eta))
+```
+
+For minimization:
+
+```python
+promotable = metric <= kth_best_metric
+```
+
+For maximization:
+
+```python
+promotable = metric >= kth_best_metric
+```
+
+The decision is local to a rung. A trial that looks good at 5 epochs must still
+earn promotion at 15 epochs.
+
+### Practical Detail: Minimum Population Per Rung
+
+If you allow promotion when only one trial has reached a rung, the first trial
+always promotes. That can over-reward fast trials.
+
+Many implementations add a minimum population check:
+
+```python
+if len(rung.records) < eta:
+    return CONTINUE
+```
+
+or:
+
+```python
+if len(rung.records) < min_trials_for_decision:
+    return PAUSE_OR_CONTINUE
+```
+
+There is no free answer:
+
+- deciding early maximizes throughput
+- waiting improves ranking quality
+- pausing requires checkpointing
+- continuing weak trials wastes compute
+
+For simple systems, continue until enough data exists, then apply pruning at
+later reports. For large clusters, pause-and-promote can be more efficient.
+
+---
+
+## 7. ASHA vs Hyperband
+
+Hyperband asks:
+
+> How much should we trust early stopping for this problem?
+
+It runs multiple Successive Halving schedules, called brackets.
+
+Some brackets start many trials with tiny budgets. Other brackets start fewer
+trials with larger budgets. This hedges against late bloomers.
+
+ASHA asks:
+
+> How do we remove synchronization barriers from halving?
+
+ASHA can be used inside a single bracket or inside Hyperband brackets.
+
+```text
+Successive Halving:
+    synchronous halving within one schedule
+
+Hyperband:
+    multiple synchronous halving schedules
+
+ASHA:
+    asynchronous halving, usually one or more schedules
+```
+
+In practice:
+
+- use single-bracket ASHA when you know a reasonable grace period
+- use Hyperband-style multi-bracket ASHA when you are unsure how early to judge
+
+---
+
+## 8. Building ASHA From Scratch
+
+This implementation is intentionally small, but it includes the pieces that
+matter in real systems:
+
+- trial state
+- rung state
+- metric ordering
+- promotion decisions
+- failed trial handling
+- delayed reports
+- deterministic ties
+
+### Data Structures
+
+```python
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from enum import Enum
+from math import floor
+from typing import Dict, List, Optional
+
+
+class Mode(str, Enum):
+    MIN = "min"
+    MAX = "max"
+
+
+class Decision(str, Enum):
+    CONTINUE = "continue"
+    STOP = "stop"
+    COMPLETE = "complete"
+
+
+@dataclass
+class TrialState:
+    trial_id: str
+    config: dict
+    resource: int = 0
+    status: str = "running"
+    last_metric: Optional[float] = None
+    last_rung: int = -1
+
+
+@dataclass(frozen=True)
+class RungRecord:
+    trial_id: str
+    metric: float
+    resource: int
+    order: int
+
+
+@dataclass
+class Rung:
+    level: int
+    resource: int
+    records: Dict[str, RungRecord] = field(default_factory=dict)
+```
+
+Why a dictionary for rung records?
+
+Because delayed metrics happen. A trial might report the same rung twice due to
+retry logic, logging duplication, or worker restarts. A dictionary lets you
+replace or ignore duplicates intentionally.
+
+### Scheduler Initialization
+
+```python
+class ASHAScheduler:
+    def __init__(
+        self,
+        *,
+        max_t: int,
+        grace_period: int,
+        reduction_factor: int = 3,
+        mode: Mode = Mode.MIN,
+        min_trials_per_rung: Optional[int] = None,
+    ):
+        if max_t < grace_period:
+            raise ValueError("max_t must be >= grace_period")
+        if reduction_factor < 2:
+            raise ValueError("reduction_factor must be >= 2")
+
+        self.max_t = max_t
+        self.grace_period = grace_period
+        self.eta = reduction_factor
+        self.mode = mode
+        self.min_trials_per_rung = min_trials_per_rung or reduction_factor
+
+        self.rungs = self._build_rungs()
+        self.trials: Dict[str, TrialState] = {}
+        self._report_order = 0
+
+    def _build_rungs(self) -> List[Rung]:
+        rungs = []
+        r = self.grace_period
+        level = 0
+        while r < self.max_t:
+            rungs.append(Rung(level=level, resource=r))
+            r *= self.eta
+            level += 1
+        rungs.append(Rung(level=level, resource=self.max_t))
+        return rungs
+```
+
+The rung resources are geometric:
+
+```text
+r_i = min(max_t, grace_period * eta^i)
+```
+
+### Registering Trials
+
+```python
+    def add_trial(self, trial_id: str, config: dict) -> None:
+        if trial_id in self.trials:
+            raise ValueError(f"duplicate trial_id: {trial_id}")
+        self.trials[trial_id] = TrialState(trial_id=trial_id, config=config)
+```
+
+Keep trial registration separate from reporting. It makes failures and retries
+cleaner.
+
+### Finding the Current Rung
+
+```python
+    def _rung_for_resource(self, resource: int) -> Optional[Rung]:
+        for rung in self.rungs:
+            if resource >= rung.resource:
+                continue
+            return rung
+        return None
+
+    def _reached_rungs(self, previous: int, current: int) -> List[Rung]:
+        return [
+            rung for rung in self.rungs
+            if previous < rung.resource <= current
+        ]
+```
+
+A trial can jump over multiple rungs if it reports late. Do not assume every
+report lands exactly on a rung.
+
+Example:
+
+```text
+worker reports at epoch 18
+rungs are 5, 15, 45
+
+The scheduler must process rung 5 and rung 15 decisions.
+```
+
+In many training systems, workers report every epoch. In distributed systems,
+reports can be delayed, batched, or lost.
+
+### Ranking a Rung
+
+```python
+    def _sorted_records(self, rung: Rung) -> List[RungRecord]:
+        reverse = self.mode == Mode.MAX
+        return sorted(
+            rung.records.values(),
+            key=lambda r: (r.metric, -r.order) if not reverse else (-r.metric, -r.order),
+        )
+```
+
+Tie-breaking must be deterministic. Here, earlier reports win ties because
+`order` increases over time and we sort by `-order` after metric direction is
+handled. You could also use trial ID. The important part is to choose one rule.
+
+### Promotion Logic
+
+```python
+    def _is_promotable(self, rung: Rung, trial_id: str) -> bool:
+        records = self._sorted_records(rung)
+
+        if len(records) < self.min_trials_per_rung:
+            return True
+
+        keep = max(1, floor(len(records) / self.eta))
+        keep_ids = {r.trial_id for r in records[:keep]}
+        return trial_id in keep_ids
+```
+
+This version allows trials to continue until enough peers have reached the rung.
+That is simple and avoids checkpointing. The cost is that some trials may train
+past the rung before enough comparison data exists.
+
+If compute is extremely expensive, use pause-and-promote instead.
+
+### Reporting Metrics
+
+```python
+    def on_result(self, trial_id: str, resource: int, metric: float) -> Decision:
+        trial = self.trials[trial_id]
+
+        if trial.status in {"stopped", "completed", "failed"}:
+            return Decision.STOP
+
+        if resource < trial.resource:
+            # Stale metric. Ignore it.
+            return Decision.CONTINUE
+
+        reached = self._reached_rungs(trial.resource, resource)
+        trial.resource = resource
+        trial.last_metric = metric
+
+        if not reached:
+            return Decision.CONTINUE
+
+        for rung in reached:
+            self._report_order += 1
+            rung.records[trial_id] = RungRecord(
+                trial_id=trial_id,
+                metric=metric,
+                resource=rung.resource,
+                order=self._report_order,
+            )
+            trial.last_rung = rung.level
+
+            if rung.resource >= self.max_t:
+                trial.status = "completed"
+                return Decision.COMPLETE
+
+            if not self._is_promotable(rung, trial_id):
+                trial.status = "stopped"
+                return Decision.STOP
+
+        return Decision.CONTINUE
+```
+
+This is the heart of ASHA.
+
+The subtle part is processing all reached rungs. A delayed report at resource
+18 must not skip the decision that should have happened at resource 5.
+
+### Failed Trials
+
+```python
+    def on_trial_error(self, trial_id: str, reason: str = "") -> None:
+        trial = self.trials[trial_id]
+        trial.status = "failed"
+        trial.error = reason
+```
+
+Do not insert failed trials into rung rankings with artificial bad metrics unless
+you have a reason. Treating failures as metrics can distort promotion thresholds.
+
+Record them separately:
+
+- bad configuration
+- infrastructure failure
+- out of memory
+- NaN loss
+- timeout
+
+Those categories mean different things.
+
+---
+
+## 9. Scheduler Behavior With Workers
+
+ASHA is not just a ranking rule. It is a worker scheduler.
+
+At runtime, you need a loop like this:
+
+```python
+while budget_remaining:
+    event = wait_for_worker_event()
+
+    if event.type == "result":
+        decision = scheduler.on_result(
+            event.trial_id,
+            resource=event.epoch,
+            metric=event.val_loss,
+        )
+
+        if decision == Decision.STOP:
+            stop_worker(event.trial_id)
+            launch_new_trial_if_worker_free()
+
+        elif decision == Decision.COMPLETE:
+            mark_complete(event.trial_id)
+            launch_new_trial_if_worker_free()
+
+        else:
+            continue_training(event.trial_id)
+
+    elif event.type == "failed":
+        scheduler.on_trial_error(event.trial_id, event.reason)
+        launch_new_trial_if_worker_free()
+```
+
+Two practical choices dominate behavior:
+
+1. Do workers train continuously and get stopped only at rung reports?
+2. Or do workers pause at rungs and wait for promotion?
+
+### Stop-Based ASHA
+
+This is common and simple.
+
+```text
+trial trains continuously
+if bad at rung: stop
+if good at rung: continue
+```
+
+Pros:
+
+- no checkpoint/resume complexity
+- good worker utilization
+- easy to implement
+
+Cons:
+
+- fast trials can run beyond a rung before enough peers exist
+- some compute is spent on trials that would later be stopped
+
+### Pause-and-Promote ASHA
+
+Trials stop at rung boundaries and wait in a promotion queue.
+
+Pros:
+
+- less wasted compute past rung thresholds
+- fairer comparison
+- useful when individual trials are expensive
+
+Cons:
+
+- requires checkpointing
+- can leave workers idle
+- more scheduling complexity
+- more storage pressure
+
+For many deep learning workloads, stop-based ASHA is the better first
+implementation.
+
+---
+
+## 10. Why These Design Choices Exist
+
+### Rungs Are Geometric
+
+Geometric spacing gives increasingly strong evidence at each stage.
+
+If rungs are linear:
+
+```text
+5, 10, 15, 20, 25
+```
+
+then ASHA makes many decisions from similar evidence. You add overhead without
+learning much more.
+
+If rungs are geometric:
+
+```text
+5, 15, 45, 135
+```
+
+each decision asks whether the trial still deserves a much larger budget.
+
+### Promotion Uses Rank, Not Absolute Metric
+
+Absolute thresholds are brittle.
+
+Bad:
+
+```python
+if val_loss > 0.2:
+    stop()
+```
+
+This fails when:
+
+- the dataset changes
+- the metric scale changes
+- early metrics are naturally high
+- the model class changes
+
+ASHA uses relative rank within a rung:
+
+```python
+keep top 1 / eta
+```
+
+This makes it portable across tasks.
+
+### A Grace Period Is Mandatory
+
+Without a grace period, ASHA becomes "kill based on startup noise."
+
+Common sources of early metric instability:
+
+- LR warmup
+- batch norm statistics
+- optimizer bias correction
+- data augmentation variance
+- random initialization variance
+- curriculum effects
+- models with slow representation learning
+
+The grace period should begin after the first metric that has some predictive
+value.
+
+### Deterministic Tie Handling Is Not Optional
+
+At scale, ties happen:
+
+- metrics rounded in logs
+- classification accuracy with small validation sets
+- failed metrics converted to sentinel values
+- repeated scores in early epochs
+
+If tie handling depends on dictionary iteration order, experiments become hard
+to reproduce.
+
+### Failed Trials Should Not Pollute Rungs
+
+Out-of-memory is not the same as high validation loss.
+
+If a trial fails because the model is too large, you may want the search
+algorithm to learn from that separately. But ASHA itself should not treat that
+as a normal metric unless your objective explicitly includes feasibility.
+
+---
+
+## 11. Handling Noisy Objectives
+
+ASHA assumes early rankings are informative. Noise weakens that assumption.
+
+Symptoms:
+
+- top trials at early rungs frequently collapse later
+- stopped trials look good when rerun
+- rankings change dramatically between adjacent validation calls
+- aggressive pruning hurts compared with random search
+
+Useful mitigations:
+
+### Increase Grace Period
+
+If the first useful signal appears after 20 epochs, do not make the first rung
+at 3 epochs.
+
+```text
+bad:  grace_period = 1
+good: grace_period = end of warmup + at least one stable validation
+```
+
+### Reduce Pruning Aggressiveness
+
+Use smaller `eta`.
+
+```text
+eta = 2  keeps half
+eta = 3  keeps one third
+eta = 4  keeps one quarter
+```
+
+For noisy objectives, `eta = 2` is often worth the extra compute.
+
+### Smooth Metrics
+
+If validation is cheap, report a smoothed metric:
+
+```python
+score = median(last_3_validation_losses)
+```
+
+Avoid smoothing across too many points. ASHA needs current quality, not a
+historical artifact.
+
+### Use Repeated Seeds for Finalists
+
+Do not trust the single best ASHA trial blindly when noise is high.
+
+Common pattern:
+
+1. Use ASHA to find a shortlist.
+2. Retrain top `k` configurations with multiple seeds.
+3. Select based on mean or median final metric.
+
+### Promote Based on Conservative Scores
+
+For stochastic metrics, rank by a confidence-adjusted score.
+
+Example for minimization:
+
+```text
+score = mean_loss + c * std_loss
+```
+
+This penalizes unstable configurations.
+
+---
+
+## 12. Late Bloomers
+
+A late bloomer is a configuration that looks weak early but strong later.
+
+Examples:
+
+- low learning rate with long training
+- strong regularization
+- larger models
+- heavy augmentation
+- delayed curriculum
+- methods with long warmup
+
+ASHA can kill these too early.
+
+Mitigations:
+
+- increase grace period
+- use multi-bracket Hyperband-style ASHA
+- compare configurations at equivalent scheduler phases
+- avoid searching LR schedules that have incompatible warmup lengths
+- use resource as optimizer steps rather than epochs when batch sizes differ
+- reserve a small fraction of budget for random full-length trials
+
+One practical trick:
+
+> Keep ASHA aggressive for cheap model families, but run a conservative bracket
+> for configurations known to learn slowly.
+
+Do not pretend one schedule is fair for every model class.
+
+---
+
+## 13. Choosing Parameters
+
+### `max_t`
+
+Choose `max_t` based on the horizon you care about.
+
+Good:
+
+```text
+final training is 100 epochs
+ASHA max_t is 100 or close enough that ranking is stable
+```
+
+Risky:
+
+```text
+final training is 300 epochs
+ASHA max_t is 30 epochs
+```
+
+That is only valid if 30-epoch rankings predict 300-epoch rankings.
+
+### `grace_period`
+
+Use domain knowledge.
+
+Rules of thumb:
+
+- at least the end of LR warmup
+- at least one full validation pass
+- long enough for loss to leave the initialization regime
+- longer for heavy augmentation or small validation sets
+
+For deep learning:
+
+```text
+grace_period = 5 to 10 epochs
+```
+
+is a common starting range, but the right value is task-specific.
+
+### `reduction_factor`
+
+| `eta` | Behavior | Use when |
+|---:|---|---|
+| 2 | Conservative | noisy metrics, late bloomers, expensive mistakes |
+| 3 | Balanced | default for many workloads |
+| 4 or higher | Aggressive | early metrics are highly predictive |
+
+### Parameter Cheat Sheet
+
+| Parameter | What it controls | Practical default | Watch for |
+|---|---|---|---|
+| `max_t` | Maximum resource any trial receives | Final training horizon or a validated proxy | Too small means you optimize early performance, not final quality |
+| `grace_period` | Minimum resource before pruning | End of warmup plus one stable validation signal | Too short kills warmup-sensitive configurations |
+| `reduction_factor` / `eta` | Fraction of trials kept at each rung | `3` for balanced pruning | Higher values are aggressive and amplify early noise |
+| `metric` | Score used for ranking | Validation loss, accuracy, reward, or task-specific score | Must be comparable across trials at the same rung |
+| `mode` | Whether lower or higher is better | `min` for loss, `max` for accuracy/reward | A wrong mode silently selects bad configurations |
+| `time_attr` / resource | Unit ASHA allocates | Steps, epochs, tokens, or examples processed | Epochs can be unfair when batch size or data volume varies |
+
+### Number of Initial Trials
+
+ASHA needs enough trials to make rung rankings meaningful.
+
+If `eta = 3` and only 4 trials reach a rung, promotion decisions are noisy.
+
+A useful minimum:
+
+```text
+initial_trials >= eta^num_rungs
+```
+
+Example:
+
+```text
+rungs = 5, 15, 45
+eta = 3
+eta^3 = 27
+```
+
+This does not mean you always need 27 trials. It means fewer trials make the
+later rungs statistically thin.
+
+---
+
+## 14. Comparison With Other Tuning Methods
+
+| Method | Main strength | Main weakness | Best use |
+|---|---|---|---|
+| Grid Search | Simple and reproducible | Explodes with dimensions, wastes budget | Very small structured spaces |
+| Random Search | Strong baseline, easy to parallelize | Does not allocate budget adaptively | Cheap trials or unknown spaces |
+| Successive Halving | Efficient early stopping | Synchronous barriers | Homogeneous trial durations |
+| ASHA | Efficient and asynchronous | Can kill late bloomers | Parallel tuning with variable trial times |
+| Hyperband | Robust to unknown early-stopping horizon | More moving parts | When grace period is uncertain |
+| Bayesian Optimization | Sample-efficient in small expensive spaces | Harder with many conditional/discrete dimensions, less parallel by default | Expensive black-box objectives |
+| PBT | Adapts hyperparameters during training | More complex, mutates trials, harder to analyze | Long training with schedules that matter |
+
+ASHA and Bayesian Optimization are not mutually exclusive.
+
+Common hybrid:
+
+```text
+Bayesian optimizer proposes configurations
+ASHA decides how much resource each configuration receives
+```
+
+This is useful when the search space is expensive and early stopping is valid.
+
+---
+
+## 15. Common Implementation Bugs
+
+| Failure mode | What it looks like | Engineering fix |
+|---|---|---|
+| Fast-trial bias | The first trials to reach rungs are repeatedly promoted | Require a minimum rung population or use pause-and-promote |
+| Cross-resource comparison | A 5-epoch metric is compared with a 45-epoch metric | Store one ranking table per rung resource |
+| Wrong metric direction | The scheduler keeps high loss or low accuracy | Make `mode` explicit and test it |
+| Delayed reports skip rungs | A worker reports at epoch 18 and bypasses epoch 5 and 15 decisions | Process every rung crossed since the previous report |
+| Failed trials pollute ranking | OOM or timeout is treated as ordinary validation loss | Track failure categories separately from metric records |
+| Resource is not comparable | Large-batch and small-batch trials get unequal optimization progress | Use optimizer steps or examples processed |
+
+### Bug: Promoting the First Trial at Every Rung
+
+If the first trial to reach a rung always promotes, fast configurations get an
+unfair advantage.
+
+Fix:
+
+- require a minimum number of records before pruning
+- or use pause-and-promote
+
+### Bug: Comparing Metrics Across Different Resources
+
+Do not compare a 5-epoch metric with a 45-epoch metric.
+
+Each rung has its own table.
+
+### Bug: Wrong Metric Direction
+
+Accuracy is maximized. Loss is minimized.
+
+This mistake silently inverts the search.
+
+Add a test:
+
+```python
+assert scheduler.is_better(0.1, 0.2)  # for loss
+```
+
+### Bug: Rung Skipping From Delayed Reports
+
+A trial reports at epoch 18 and you only register epoch 18. It skipped the 5 and
+15 epoch decisions.
+
+Fix:
+
+- process all rungs crossed since the last report
+
+### Bug: No Deterministic Tie Break
+
+If tie order is nondeterministic, reruns become confusing.
+
+Fix:
+
+- tie break by report order or trial ID
+
+### Bug: Failed Trials Treated as Normal Metrics
+
+Out-of-memory should not be ranked beside validation loss.
+
+Fix:
+
+- track failure categories separately
+
+### Bug: Resource Is Not Comparable
+
+If one trial uses batch size 8 and another uses batch size 128, "epoch" may not
+mean comparable optimization progress.
+
+Fix:
+
+- use optimizer steps or examples processed
+- or constrain batch size during ASHA
+
+### Bug: Validation Is Too Sparse
+
+If trials report only after training for a long time, ASHA cannot stop them
+early.
+
+Fix:
+
+- align validation/report intervals with rung resources
+
+---
+
+## 16. Debugging ASHA
+
+Print the rung tables.
+
+For every rung:
+
+```text
+rung  resource  n_records  cutoff_metric  promoted  stopped
+0     5         27         0.84           9         18
+1     15        9          0.61           3         6
+2     45        3          0.52           1         2
+```
+
+If those numbers do not match the intended `eta`, inspect the promotion logic.
+
+<Mermaid
+  title="Debugging path for a bad ASHA run"
+  chart={`
+flowchart TD
+  Bad[ASHA underperforms random search] --> Curves{Are early curves predictive?}
+  Curves -->|no| Grace[Increase grace period or use Hyperband brackets]
+  Curves -->|yes| Rungs{Do rung counts match eta?}
+  Rungs -->|no| Logic[Inspect promotion and delayed-report logic]
+  Rungs -->|yes| Metric{Is metric direction correct?}
+  Metric -->|no| Mode[Fix mode and add tests]
+  Metric -->|yes| Space{Is resource comparable?}
+  Space -->|no| Resource[Use steps, tokens, or examples processed]
+  Space -->|yes| Baseline[Retrain finalists with seeds and compare budget fairly]
+  classDef accent fill:#79863c,color:#fff,stroke:#79863c;
+  class Bad,Rungs,Metric,Baseline accent;
+` }
+/>
+
+### Checks Worth Automating
+
+- Every trial receives at least `grace_period`.
+- No trial exceeds `max_t`.
+- Every rung stores metrics only from that resource level.
+- Promotion count is approximately `floor(n / eta)`.
+- Failed trials are counted separately.
+- Metric direction is tested.
+- Delayed reports do not skip rungs.
+- The final selected config exists in the saved trial records.
+
+### Plot Survival Curves
+
+Plot how many trials remain after each rung.
+
+```text
+trials alive
+100 |************
+ 33 |****
+ 11 |*
+  3 |*
+    +----------------
+      5   15   45  135 epochs
+```
+
+If almost everything dies at the first rung, the grace period may be too short
+or `eta` too aggressive.
+
+If almost nothing dies, ASHA is not saving compute.
+
+### Compare Against Random Search
+
+Always run a random-search baseline with the same total budget.
+
+ASHA should beat random search in wall-clock efficiency. If it does not:
+
+- early metrics may be uninformative
+- rung placement may be wrong
+- pruning may be too aggressive
+- the search space may be poorly designed
+
+---
+
+## 17. Engineering Notes for Real Systems
+
+### Checkpointing
+
+Stop-based ASHA can avoid checkpointing except for final candidates.
+
+Pause-and-promote ASHA requires checkpointing at every rung.
+
+Checkpoint contents:
+
+- model weights
+- optimizer state
+- scheduler state
+- random states
+- dataloader epoch/state if deterministic replay matters
+- trial config
+- current resource
+
+### Worker Utilization
+
+ASHA works best when workers are always busy.
+
+If workers are idle:
+
+- launch more initial trials
+- reduce pause behavior
+- increase search-space sampling speed
+- avoid validation bottlenecks
+- use asynchronous result handling
+
+### Trial Duration Variance
+
+ASHA handles uneven durations better than synchronous halving, but it does not
+remove all bias.
+
+Fast trials produce earlier rung records. If promotion happens with too few
+records, speed becomes part of the objective.
+
+If that is undesirable, use:
+
+- minimum records per rung
+- pause-and-promote
+- separate brackets by model size
+
+### Search Space Design
+
+ASHA cannot fix a bad search space.
+
+Bad spaces:
+
+- learning rates spanning absurd ranges
+- invalid model configurations
+- batch sizes that change resource meaning
+- augmentation ranges that destroy labels
+- conditional parameters sampled independently
+
+Good spaces:
+
+- encode known constraints
+- sample log-scale parameters logarithmically
+- keep resource comparable across trials
+- separate architecture search from optimizer search when needed
+
+---
+
+## 18. A More Realistic Scheduler Skeleton
+
+Below is a compact event-driven skeleton. It omits cluster-specific code, but
+keeps the control flow you need in production.
+
+```python
+class TuningController:
+    def __init__(self, scheduler, searcher, workers):
+        self.scheduler = scheduler
+        self.searcher = searcher
+        self.workers = workers
+        self.live_trials = {}
+
+    def launch_trial(self, worker):
+        config = self.searcher.sample()
+        trial_id = self.searcher.new_trial_id()
+        self.scheduler.add_trial(trial_id, config)
+        self.live_trials[trial_id] = worker
+        worker.start(trial_id, config)
+
+    def run(self):
+        for worker in self.workers.free():
+            self.launch_trial(worker)
+
+        while not self.done():
+            event = self.wait_for_event()
+
+            if event.kind == "metric":
+                decision = self.scheduler.on_result(
+                    trial_id=event.trial_id,
+                    resource=event.resource,
+                    metric=event.metric,
+                )
+
+                if decision in {Decision.STOP, Decision.COMPLETE}:
+                    worker = self.live_trials.pop(event.trial_id)
+                    worker.stop()
+                    if self.searcher.has_more():
+                        self.launch_trial(worker)
+
+            elif event.kind == "error":
+                self.scheduler.on_trial_error(event.trial_id, event.reason)
+                worker = self.live_trials.pop(event.trial_id)
+                if self.searcher.has_more():
+                    self.launch_trial(worker)
+```
+
+The scheduler should not know about GPUs, process IDs, Docker containers, or
+Slurm jobs. Keep ASHA as a resource-allocation component. Put infrastructure in
+the controller.
+
+---
+
+## 19. When ASHA Works Well
+
+ASHA is a strong fit when:
+
+- training curves are somewhat predictive early
+- many configurations are clearly bad
+- trials have variable duration
+- you have multiple workers
+- checkpointing is expensive or unnecessary
+- random search is a reasonable sampler
+- your objective is available at intermediate resources
+
+Examples:
+
+- deep learning hyperparameter tuning
+- augmentation strength search
+- optimizer and scheduler search
+- model-size search within one architecture family
+- reinforcement learning with frequent evaluation, if noise is controlled
+
+---
+
+## 20. When ASHA Is a Poor Fit
+
+ASHA is risky when:
+
+- early metrics are uncorrelated with final metrics
+- late bloomers are common
+- evaluation is very noisy
+- training cannot be meaningfully interrupted
+- every trial is cheap enough to fully train
+- the objective only exists at the end
+- the search space contains very different training dynamics
+
+In these cases, consider:
+
+- random search with full training
+- Bayesian optimization
+- Hyperband with conservative brackets
+- PBT for schedule-heavy problems
+- manual narrowing of the search space
+
+---
+
+## 21. Final Checklist
+
+Before trusting an ASHA run:
+
+- [ ] Define the resource unit clearly.
+- [ ] Confirm `max_t` matches the horizon you care about.
+- [ ] Set `grace_period` after warmup and early instability.
+- [ ] Choose `eta` based on objective noise.
+- [ ] Keep metrics separated by rung.
+- [ ] Test metric direction.
+- [ ] Handle delayed reports that cross multiple rungs.
+- [ ] Add deterministic tie-breaking.
+- [ ] Track failed trials separately.
+- [ ] Avoid comparing trials with incompatible resource definitions.
+- [ ] Print rung tables.
+- [ ] Save every trial config, metric, rung, and decision.
+- [ ] Re-run top configurations with multiple seeds if the metric is noisy.
+- [ ] Compare against random search under equal budget.
+- [ ] Check worker utilization.
+- [ ] Verify the selected config is actually used in final training.
+
+That last point is not cosmetic. A common failure is to tune one set of
+parameters, then accidentally launch final training with different defaults.
+ASHA only helps if the winning configuration is faithfully replayed.

@@ -1,0 +1,608 @@
+---
+title: "Agentic AI Architecture, Part 1: How to Design Reliable AI Agents"
+description: "A practical guide to agentic AI architecture: what AI agents are, where LLMs fit, and how to design reliable agent systems with state, tools, retrieval, guardrails, and evaluation."
+date: 2026-06-04
+category: "Engineering"
+tags: ["AI Agents", "Agentic AI", "Architecture", "Production AI", "LLM Systems"]
+draft: false
+---
+
+import Mermaid from "../../components/Mermaid.astro";
+
+Agentic AI is often described as an LLM that can call tools. That definition is technically true, but it is too shallow for production work.
+
+A reliable AI agent is not just a prompt with access to APIs. It is a controlled software system where a language model makes bounded decisions, updates structured state, calls validated tools, gathers evidence, and produces an answer that can be traced and evaluated.
+
+The important word is **bounded**. The model should help the system handle ambiguity. It should not own every part of the system.
+
+```text
+User intent
+  -> workflow routing
+  -> structured state
+  -> planner decision
+  -> validated tools and retrieval
+  -> evidence checks
+  -> final answer
+  -> trace, metrics, and evals
+```
+
+This first part explains the architecture: the layers, responsibilities, and design principles that make agentic AI systems usable outside demos.
+
+<Mermaid
+  title="Production agent system at a glance"
+  chart={`
+flowchart LR
+  U[User request] --> R[Workflow router]
+  R --> S[Structured state]
+  S --> P[Planner / controller]
+  P --> V{Runtime validation}
+  V -->|approved| T[Tools and retrieval]
+  V -->|missing info| Q[Clarifying question]
+  T --> E[Evidence and result evaluator]
+  E --> A[Final answer]
+  A --> O[Trace, metrics, evals]
+  E -->|weak evidence| Repair[Target-local repair]
+  Repair --> T
+  classDef accent fill:#79863c,color:#fff,stroke:#79863c;
+  class R,P,E accent;
+` }
+/>
+
+## What “agentic AI” means in practice
+
+An agentic AI system can plan, call tools, use intermediate results, ask clarifying questions, and continue a task across multiple steps. That does not mean it should be free to improvise every action.
+
+A practical definition:
+
+```text
+Agent = model + instructions + tools + state + runtime policy + evaluation loop
+```
+
+A production definition:
+
+```text
+Agent = bounded decision controller
+        operating over structured state
+        calling validated tools
+        under evidence, cost, latency, and safety constraints
+```
+
+The difference shows up immediately in system design.
+
+A naive agent flow looks like this:
+
+```text
+User asks
+  -> LLM decides what to do
+  -> maybe calls a tool
+  -> LLM answers
+```
+
+A production-grade flow is more explicit:
+
+```text
+User asks
+  -> router identifies the workflow
+  -> agent updates structured state
+  -> planner returns an action packet
+  -> runtime validates the action
+  -> tools execute deterministic operations
+  -> evidence and quality are checked
+  -> answer is synthesized
+  -> trace, cost, latency, and failures are logged
+```
+
+This is the central shift: the agent is not the whole product. The agent is one decision layer inside a larger runtime.
+
+## The core principle: LLMs should reason, not own the system
+
+Language models are useful because they handle messy input. They can recognize intent, choose a workflow, interpret unclear language, decide which tool may help, and synthesize a clear response from partial information.
+
+They are not reliable as the sole authority for facts, permissions, calculations, business rules, database state, retry logic, cost control, or auditability.
+
+Use this division of labor:
+
+```text
+LLM:
+  intent recognition
+  planning
+  tool selection
+  clarification
+  synthesis
+
+Runtime:
+  validation
+  retries
+  budgets
+  tool execution
+  state transitions
+  traces
+
+Tools:
+  deterministic operations
+  APIs
+  database queries
+  calculations
+  file operations
+
+Retrieval:
+  evidence discovery
+  source ranking
+  context packing
+  coverage checks
+
+Evaluation:
+  regression tests
+  workflow quality
+  grounding
+  cost and latency
+```
+
+The strongest agent systems are not the ones where the model is allowed to do the most. They are the ones where the model has the right context, the right tools, and the right constraints.
+
+## A useful mental model: agent as controller
+
+The agent should behave like a controller in a software system.
+
+```text
+observe
+  -> update state
+  -> decide next action
+  -> call tool or retrieve evidence
+  -> inspect result
+  -> continue, ask, hand off, or answer
+```
+
+This loop is useful because it separates decision-making from execution. The model proposes the next action. The runtime decides whether that action is valid. The tool performs a bounded operation. The evaluator checks whether the result is good enough.
+
+<Mermaid
+  title="Agent controller loop"
+  chart={`
+stateDiagram-v2
+  [*] --> Observe
+  Observe --> UpdateState
+  UpdateState --> DecideAction
+  DecideAction --> ExecuteTool: tool or retrieval needed
+  DecideAction --> AskClarification: missing critical input
+  DecideAction --> Answer: enough evidence
+  ExecuteTool --> EvaluateResult
+  EvaluateResult --> DecideAction: continue
+  EvaluateResult --> Answer: supported
+  EvaluateResult --> Repair: partial evidence
+  Repair --> ExecuteTool
+  AskClarification --> [*]
+  Answer --> [*]
+` }
+/>
+
+That separation is what makes the system debuggable.
+
+If an agent gives a wrong answer, you should be able to inspect:
+
+- which workflow was selected
+- what state was known at the time
+- which tool calls were proposed
+- which tool calls were approved
+- what evidence was retrieved
+- which claims were allowed in the final answer
+- where cost, latency, or failure occurred
+
+Without that trace, the system is only fluent. It is not reliable.
+
+## The architecture of a reliable agent system
+
+A strong agentic architecture usually has these layers:
+
+```text
+User
+  ↓
+Router
+  ↓
+Workflow agent
+  ↓
+Structured state manager
+  ↓
+Planner / controller
+  ↓
+Tool runtime
+  ├── deterministic tools
+  ├── retrieval engine
+  ├── SQL / APIs
+  ├── validators
+  ├── rule engines
+  └── external services
+  ↓
+Evidence and result evaluator
+  ↓
+Final synthesizer
+  ↓
+Trace store, session store, evals
+```
+
+Each layer has a job:
+
+| Layer | Responsibility |
+| --- | --- |
+| Router | Selects the workflow or specialist based on user intent and current state |
+| Workflow agent | Owns the task logic for a domain or user journey |
+| State manager | Stores compact workflow state instead of replaying full chat history |
+| Planner | Produces structured action decisions |
+| Tool runtime | Validates and executes bounded operations |
+| Retrieval engine | Finds and packs evidence for the task |
+| Evaluator | Checks coverage, grounding, validity, and failure modes |
+| Synthesizer | Writes the final user-facing answer from approved results |
+| Observability layer | Records traces, metrics, cost, latency, and regressions |
+
+This architecture avoids a common failure mode: asking one model call to understand the user, plan the work, retrieve evidence, validate the result, and write the final answer all at once.
+
+<Mermaid
+  title="Layer ownership"
+  chart={`
+flowchart TB
+  subgraph Intelligence
+    LLM[LLM: intent, planning, synthesis]
+  end
+  subgraph Control
+    Runtime[Runtime: validation, budgets, retries]
+    State[State manager: workflow memory]
+  end
+  subgraph Execution
+    Tools[Tools: APIs, SQL, calculations]
+    Retrieval[Retrieval: evidence discovery]
+  end
+  subgraph Quality
+    Evals[Evals: regression and grounding]
+    Traces[Traces: cost, latency, failures]
+  end
+  LLM --> Runtime
+  Runtime --> State
+  Runtime --> Tools
+  Runtime --> Retrieval
+  Tools --> Traces
+  Retrieval --> Evals
+  Evals --> LLM
+` }
+/>
+
+## Runtime modes keep cost under control
+
+Not every request needs the same level of reasoning. A production agent should have explicit runtime modes.
+
+| Mode | Use when | Typical path | Risk |
+| --- | --- | --- | --- |
+| Fast | The turn is simple, local, or only updates state | Router or planner -> response/tool | Low |
+| Balanced | The answer needs evidence or tool use | Planner -> tools/retrieval -> synthesis | Medium |
+| Deep | Evidence is partial, conflicting, or high impact | Planner -> parallel work -> evaluator -> repair -> synthesis | High |
+
+### Fast mode
+
+Use fast mode for simple requests, state updates, or clarification turns.
+
+```text
+planner or router
+  -> direct response or deterministic tool
+```
+
+Good examples:
+
+- the user answers a clarifying question
+- no retrieval is needed
+- the action is low risk
+- the system only needs to update state
+
+### Balanced mode
+
+Balanced mode should be the default for useful work.
+
+```text
+planner
+  -> tools or retrieval
+  -> final grounded synthesis
+```
+
+Use it when the answer needs evidence, multiple tools, structured output, or workflow state.
+
+### Deep mode
+
+Deep mode is for higher-impact or ambiguous work.
+
+```text
+planner
+  -> parallel tools and retrieval
+  -> evaluator
+  -> targeted repair
+  -> final synthesis
+```
+
+Use it when retrieval coverage is weak, evidence conflicts, the answer affects a decision, or the task requires multi-step reasoning.
+
+Deep mode should be earned by the request. If every request uses deep mode, the system becomes slow and expensive without necessarily becoming more accurate.
+
+## Structured state beats long chat history
+
+Many early agent prototypes treat memory as “send the whole conversation back to the model.” That works for demos and breaks down in real products.
+
+Full chat history is noisy. It grows without a stable shape. It makes behavior harder to reproduce. It also forces the model to infer workflow state from prose instead of reading state directly.
+
+Use compact structured state:
+
+```json
+{
+  "active_workflow": "document_analysis",
+  "workflow_stage": "evidence_collection",
+  "known_facts": {
+    "document_type": "contract",
+    "requested_output": "risk summary"
+  },
+  "unknown_fields": ["jurisdiction"],
+  "last_evidence_ids": ["doc:17:clause:4"],
+  "handoff_allowed": false,
+  "summary": "User wants a risk-focused review of a contract."
+}
+```
+
+This gives the runtime a stable representation of the task.
+
+Structured state helps with:
+
+- routing follow-up questions correctly
+- preventing repeated questions
+- resuming after failures
+- deciding when a handoff is allowed
+- keeping prompts smaller
+- debugging workflow behavior
+
+The rule is simple: **conversation history is context; structured state is memory.**
+
+## Sticky workflow routing
+
+Follow-up messages should usually remain inside the active workflow until the workflow explicitly allows a handoff.
+
+Bad behavior:
+
+```text
+Turn 1: user starts document review
+Turn 2: system routes to document review
+Turn 3: user asks "what about this clause?"
+Turn 4: router treats it as a generic legal question
+```
+
+Better behavior:
+
+```json
+{
+  "active_workflow": "document_review",
+  "workflow_stage": "clause_analysis",
+  "handoff_allowed": false
+}
+```
+
+Routing rule:
+
+```python
+if state.active_workflow and not state.handoff_allowed:
+    route_to(state.active_workflow)
+else:
+    route_normally()
+```
+
+Sticky routing prevents tool drift. It also makes the agent feel more coherent because it remembers the actual task, not just the latest sentence.
+
+## Planner outputs should be action packets
+
+The planner should not write long internal essays. It should return a structured decision that the runtime can validate.
+
+Weak planner output:
+
+```text
+The user seems to be asking about contract risk. I should probably search the document and maybe summarize the relevant sections.
+```
+
+Useful planner output:
+
+```json
+{
+  "action": "retrieve",
+  "workflow_stage": "clause_analysis",
+  "state_delta": {
+    "focus": "termination clause"
+  },
+  "retrieval_targets": [
+    {
+      "target_id": "termination_terms",
+      "query": "termination notice cure period liability",
+      "must_cover": true,
+      "max_chunks": 4
+    }
+  ],
+  "clarification_question": null,
+  "handoff_allowed": false
+}
+```
+
+This lets the runtime do real engineering work:
+
+- validate required fields
+- reject unsafe actions
+- apply cost budgets
+- execute tools
+- retry failures
+- log decisions
+- test planner behavior with evals
+
+The planner proposes. The runtime enforces.
+
+## Tool design is part of agent design
+
+Tools are not just API wrappers. They are the boundary between model reasoning and system action.
+
+A good tool has:
+
+- a narrow purpose
+- explicit input schema
+- clear error semantics
+- deterministic behavior where possible
+- traceable output IDs
+- permission checks
+- timeout and retry policy
+
+Weak tool description:
+
+```text
+Search the database.
+```
+
+Better tool description:
+
+```text
+Search normalized document chunks for evidence supporting a specific retrieval target.
+Return chunk IDs, source titles, section paths, snippets, and ranking scores.
+Use this only after the planner has created a retrieval target.
+Do not generate the final answer.
+```
+
+Tool descriptions are behavior controls. If they are vague, the model will call tools inconsistently. If they are too verbose, they waste tokens and encourage over-calling.
+
+## Retrieval should be a shared intelligence layer
+
+Do not let every agent invent its own retrieval logic.
+
+Bad architecture:
+
+```text
+Contract agent has custom retrieval.
+Support agent has custom retrieval.
+Research agent has custom retrieval.
+Every workflow tunes top_k differently.
+```
+
+Better architecture:
+
+```text
+Every workflow creates a RetrievalTask.
+One shared retrieval engine executes it.
+```
+
+A retrieval task should describe the evidence need, not the retrieval implementation.
+
+```json
+{
+  "task_type": "risk_analysis",
+  "targets": [
+    {
+      "target_id": "liability_cap",
+      "text": "liability cap and exclusions",
+      "queries": ["liability cap exclusions indirect damages"],
+      "must_cover": true,
+      "max_chunks": 4
+    }
+  ],
+  "retrieval_depth": "balanced",
+  "filters": {
+    "document_id": "contract_042"
+  }
+}
+```
+
+The retrieval engine can then handle the implementation:
+
+```text
+keyword search
+dense vector search
+sparse retrieval
+hybrid fusion
+deduplication
+section expansion
+source-fit scoring
+context packing
+trace logging
+```
+
+This keeps the agent focused on what evidence is needed while the retrieval system decides how to find it.
+
+## Modern RAG is not fixed top-k vector search
+
+Naive RAG often looks like this:
+
+```text
+embed query
+  -> retrieve top_k chunks
+  -> stuff context
+  -> answer
+```
+
+That is rarely enough for serious agent workflows.
+
+Production retrieval should be target-driven:
+
+```text
+understand task
+  -> decompose into evidence targets
+  -> retrieve per target
+  -> combine lexical and semantic candidates
+  -> remove duplicates
+  -> expand useful parent context
+  -> check source fit
+  -> pack context by budget
+  -> synthesize only supported claims
+```
+
+This matters because agent tasks often need different kinds of evidence. A contract review may need exact clause wording. A research assistant may need broad coverage across sources. A support agent may need the latest policy and the customer’s account state. One retrieval strategy will not serve all three.
+
+## Guardrails should be layered
+
+Guardrails are not a single moderation step. They are a set of checks across the workflow.
+
+Use layers:
+
+```text
+input checks
+workflow routing policy
+tool-call validation
+permission checks
+schema validation
+retrieval coverage checks
+final answer grounding
+human review for high-impact cases
+audit logs
+```
+
+The most important guardrails are often ordinary software controls: schemas, permissions, allowlists, budgets, and deterministic validators.
+
+The model can help identify risk. It should not be the only thing preventing risk.
+
+## What to avoid
+
+The most common agentic AI failures are architectural, not linguistic.
+
+Avoid:
+
+- one giant prompt that does everything
+- unbounded ReAct-style loops
+- tool calls without validation
+- full chat history replay forever
+- hidden keyword rules pretending to be reasoning
+- agent-specific retrieval hacks
+- always-on critics and rerankers
+- multi-agent chat for simple tasks
+- fluent answers with no evidence trail
+- unsupported final claims
+
+The hard trap is that a weak architecture can still produce an impressive answer. Fluency is not evidence of correctness.
+
+## The production doctrine
+
+A strong agentic AI architecture has a clear philosophy:
+
+```text
+LLM handles ambiguity.
+Runtime handles control.
+Tools handle execution.
+Data stores handle truth.
+Retrieval handles evidence.
+Evaluation handles improvement.
+```
+
+Do not make an agent smarter by making it freer. Make it smarter by giving it better state, better tools, better evidence, better constraints, and better feedback loops.
+
+Part 2 turns this architecture into an implementation playbook: orchestration patterns, multi-agent design, observability, evaluation, cost control, and a practical repository structure for production AI agents.

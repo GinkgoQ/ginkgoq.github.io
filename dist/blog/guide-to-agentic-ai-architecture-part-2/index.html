@@ -1,0 +1,874 @@
+<!DOCTYPE html><html lang="en" data-theme="light" data-astro-cid-37fxchfa> <!-- Google tag (gtag.js) --> <head><script async src="https://www.googletagmanager.com/gtag/js?id=G-FHHNFNDEPZ"></script><script type="module">window.dataLayer=window.dataLayer||[];function a(){dataLayer.push(arguments)}a("js",new Date);a("config","G-FHHNFNDEPZ");</script><link rel="manifest" href="/site.webmanifest"><link rel="alternate" type="application/rss+xml" title="GinkgoQ RSS Feed" href="/rss.xml"><link rel="author" href="/humans.txt"><meta charset="UTF-8"><meta name="description" content="A production playbook for agentic AI systems: orchestration patterns, multi-agent design, retrieval repair, observability, evaluation, cost control, and implementation structure."><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="Astro v6.3.5"><title>Agentic AI Architecture, Part 2: Building Production AI Agent Systems — GinkgoQ</title><meta property="og:title" content="Agentic AI Architecture, Part 2: Building Production AI Agent Systems — GinkgoQ"><meta property="og:description" content="A production playbook for agentic AI systems: orchestration patterns, multi-agent design, retrieval repair, observability, evaluation, cost control, and implementation structure."><meta property="og:type" content="article"><meta property="og:url" content="https://ginkgoq.github.io/blog/guide-to-agentic-ai-architecture-part-2/"><meta property="og:image" content="https://ginkgoq.github.io//images/og-default.png"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="Agentic AI Architecture, Part 2: Building Production AI Agent Systems — GinkgoQ"><meta name="twitter:description" content="A production playbook for agentic AI systems: orchestration patterns, multi-agent design, retrieval repair, observability, evaluation, cost control, and implementation structure."><meta name="twitter:image" content="https://ginkgoq.github.io//images/og-default.png"><link rel="icon" href="/favicon.svg"><link rel="canonical" href="https://ginkgoq.github.io/blog/guide-to-agentic-ai-architecture-part-2/"><script type="application/ld+json">[{"@type":"Organization","@context":"https://schema.org","name":"GinkgoQ","url":"https://ginkgoq.github.io","logo":{"@type":"ImageObject","url":"https://ginkgoq.github.io/favicon.svg"}},{"@type":"WebSite","@context":"https://schema.org","url":"https://ginkgoq.github.io","name":"GinkgoQ","publisher":{"@type":"Organization","name":"GinkgoQ"}}]</script><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="true"><link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet"><link rel="stylesheet" href="/_astro/404.D3HxzjoC.css"><style>.mermaid-figure[data-astro-cid-qz3dz2lk]{margin:2rem 0;padding:1rem;border:1px solid var(--color-line);border-radius:var(--radius-sm);background:var(--color-surface-2);overflow-x:auto;transition:background-color .24s var(--ease),border-color .24s var(--ease)}.mermaid-figure[data-astro-cid-qz3dz2lk] figcaption[data-astro-cid-qz3dz2lk]{margin:0 0 .85rem;color:var(--color-subtle);font-family:var(--font-mono);font-size:.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase}.mermaid[data-astro-cid-qz3dz2lk]{min-width:620px;margin:0;background:transparent}.mermaid[data-astro-cid-qz3dz2lk] svg{display:block;max-width:none;color:var(--color-text)}.mermaid[data-astro-cid-qz3dz2lk] .node rect,.mermaid[data-astro-cid-qz3dz2lk] .node circle,.mermaid[data-astro-cid-qz3dz2lk] .node ellipse,.mermaid[data-astro-cid-qz3dz2lk] .node polygon,.mermaid[data-astro-cid-qz3dz2lk] .node path{fill:var(--color-surface)!important;stroke:var(--color-accent)!important}.mermaid[data-astro-cid-qz3dz2lk] .cluster rect{fill:var(--color-surface-2)!important;stroke:var(--color-line)!important}.mermaid[data-astro-cid-qz3dz2lk] .edgePath path,.mermaid[data-astro-cid-qz3dz2lk] .flowchart-link,.mermaid[data-astro-cid-qz3dz2lk] .transition,.mermaid[data-astro-cid-qz3dz2lk] .messageLine0,.mermaid[data-astro-cid-qz3dz2lk] .messageLine1{stroke:var(--color-accent)!important}.mermaid[data-astro-cid-qz3dz2lk] .arrowheadPath,.mermaid[data-astro-cid-qz3dz2lk] marker path{fill:var(--color-accent)!important;stroke:var(--color-accent)!important}.mermaid[data-astro-cid-qz3dz2lk] text,.mermaid[data-astro-cid-qz3dz2lk] .label,.mermaid[data-astro-cid-qz3dz2lk] .nodeLabel,.mermaid[data-astro-cid-qz3dz2lk] .edgeLabel,.mermaid[data-astro-cid-qz3dz2lk] .actor,.mermaid[data-astro-cid-qz3dz2lk] .messageText,.mermaid[data-astro-cid-qz3dz2lk] .stateLabel,.mermaid[data-astro-cid-qz3dz2lk] .labelText{fill:var(--color-text)!important;color:var(--color-text)!important}.mermaid[data-astro-cid-qz3dz2lk] .edgeLabel,.mermaid[data-astro-cid-qz3dz2lk] .edgeLabel p,.mermaid[data-astro-cid-qz3dz2lk] .labelBkg{background:var(--color-surface-2)!important;fill:var(--color-surface-2)!important}.mermaid[data-astro-cid-qz3dz2lk] .actor{fill:var(--color-surface)!important;stroke:var(--color-accent)!important}
+</style></head> <body data-astro-cid-37fxchfa> <a class="skip-link" href="#main" data-astro-cid-37fxchfa>Skip to content</a> <div class="reading-progress" id="reading-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Reading progress" aria-hidden="true" data-astro-cid-37fxchfa></div> <div class="page-bg" data-astro-cid-37fxchfa> <div class="card-shell" data-astro-cid-37fxchfa> <div id="scroll-sentinel" style="position:absolute;top:0;height:1px;width:1px;pointer-events:none;" aria-hidden="true" data-astro-cid-37fxchfa></div> <header class="site-header" id="site-header" role="banner" data-astro-cid-3ef6ksr2> <a class="brand" href="/" aria-label="GinkgoQ — home" data-astro-cid-3ef6ksr2> <span class="brand-mark" aria-hidden="true" data-astro-cid-3ef6ksr2> <img class="brand-logo" src="/favicon.svg" alt="GinkgoQ mark" data-astro-cid-3ef6ksr2> </span> <span class="brand-word" aria-label="GINKGOQ"> <span aria-hidden="true">G</span><span aria-hidden="true">I</span><span aria-hidden="true">N</span><span aria-hidden="true">K</span><span aria-hidden="true">G</span><span aria-hidden="true">O</span><span class="brand-q" aria-hidden="true">Q</span> </span> </a> <div class="header-middle" role="presentation" data-astro-cid-3ef6ksr2> <nav class="site-nav" id="site-nav" aria-label="Main navigation" data-astro-cid-3ef6ksr2> <a href="/start-here/" data-astro-cid-3ef6ksr2>Start here</a><a href="/blog/" data-astro-cid-3ef6ksr2>Blog</a><a href="/research-notes/" data-astro-cid-3ef6ksr2>Research Notes</a><a href="/roadmap/" data-astro-cid-3ef6ksr2>Roadmap</a><a href="/about/" data-astro-cid-3ef6ksr2>About</a> </nav> <div class="header-search" id="header-search" role="search" aria-label="Search GinkgoQ" data-astro-cid-3ef6ksr2> <div class="search-inner" data-astro-cid-3ef6ksr2> <label for="search-input" class="sr-only" data-astro-cid-3ef6ksr2>Search posts and notes</label> <div class="search-field" data-astro-cid-3ef6ksr2> <input type="search" id="search-input" class="search-input" placeholder="Search articles and research…" autocomplete="off" autocorrect="off" spellcheck="false" role="combobox" aria-haspopup="listbox" aria-autocomplete="list" aria-controls="search-results-list" aria-expanded="false" data-astro-cid-3ef6ksr2> <button class="search-close-hint" id="btn-search-close" aria-label="Close search" hidden type="button" data-astro-cid-3ef6ksr2>Esc</button> </div> </div> </div> </div> <div class="header-actions" data-astro-cid-3ef6ksr2> <button class="btn-icon btn-theme" id="btn-theme" aria-label="Switch theme" type="button" data-astro-cid-3ef6ksr2> <svg class="icon-sun" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" data-astro-cid-3ef6ksr2> <circle cx="12" cy="12" r="5" data-astro-cid-3ef6ksr2></circle> <line x1="12" y1="1" x2="12" y2="3" data-astro-cid-3ef6ksr2></line> <line x1="12" y1="21" x2="12" y2="23" data-astro-cid-3ef6ksr2></line> <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" data-astro-cid-3ef6ksr2></line> <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" data-astro-cid-3ef6ksr2></line> <line x1="1" y1="12" x2="3" y2="12" data-astro-cid-3ef6ksr2></line> <line x1="21" y1="12" x2="23" y2="12" data-astro-cid-3ef6ksr2></line> <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" data-astro-cid-3ef6ksr2></line> <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" data-astro-cid-3ef6ksr2></line> </svg> <svg class="icon-moon" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" data-astro-cid-3ef6ksr2> <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" data-astro-cid-3ef6ksr2></path> </svg> </button> <button class="search-pill" id="btn-search-open" aria-label="Search (⌘K)" aria-expanded="false" aria-controls="search-results-panel" type="button" data-astro-cid-3ef6ksr2> <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" data-astro-cid-3ef6ksr2> <circle cx="11" cy="11" r="8" data-astro-cid-3ef6ksr2></circle> <line x1="21" y1="21" x2="16.65" y2="16.65" data-astro-cid-3ef6ksr2></line> </svg> <span class="search-pill-label" data-astro-cid-3ef6ksr2>Search</span> <span class="search-kbd-hint" aria-hidden="true" data-astro-cid-3ef6ksr2><kbd data-astro-cid-3ef6ksr2>⌘</kbd><kbd data-astro-cid-3ef6ksr2>K</kbd></span> </button> <a class="btn-icon" href="/rss.xml" aria-label="Subscribe via RSS" title="Subscribe via RSS" data-astro-cid-3ef6ksr2> <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" data-astro-cid-3ef6ksr2> <path d="M4.5 19.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3Z" data-astro-cid-3ef6ksr2></path> <path d="M4.5 12.75c5.623 0 10.185 4.562 10.185 10.185" data-astro-cid-3ef6ksr2></path> <path d="M4.5 6c8.284 0 15 6.716 15 15" data-astro-cid-3ef6ksr2></path> </svg> </a> <button class="btn-icon btn-hamburger" id="btn-hamburger" aria-label="Open navigation" aria-expanded="false" aria-controls="mobile-nav" type="button" data-astro-cid-3ef6ksr2> <svg id="icon-hamburger" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" data-astro-cid-3ef6ksr2> <line x1="3" y1="6" x2="21" y2="6" data-astro-cid-3ef6ksr2></line> <line x1="3" y1="12" x2="21" y2="12" data-astro-cid-3ef6ksr2></line> <line x1="3" y1="18" x2="21" y2="18" data-astro-cid-3ef6ksr2></line> </svg> <svg id="icon-hamburger-close" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true" style="display:none;" data-astro-cid-3ef6ksr2> <line x1="18" y1="6" x2="6" y2="18" data-astro-cid-3ef6ksr2></line> <line x1="6" y1="6" x2="18" y2="18" data-astro-cid-3ef6ksr2></line> </svg> </button> </div> </header> <div class="mobile-nav" id="mobile-nav" role="dialog" aria-modal="true" aria-hidden="true" aria-label="Mobile navigation" data-astro-cid-3ef6ksr2> <div class="mobile-nav-inner" data-astro-cid-3ef6ksr2> <a href="/start-here/" data-astro-cid-3ef6ksr2>Start here</a><a href="/blog/" data-astro-cid-3ef6ksr2>Blog</a><a href="/research-notes/" data-astro-cid-3ef6ksr2>Research Notes</a><a href="/roadmap/" data-astro-cid-3ef6ksr2>Roadmap</a><a href="/about/" data-astro-cid-3ef6ksr2>About</a> </div> </div> <div class="search-results-panel" id="search-results-panel" hidden data-astro-cid-37fxchfa> <div class="search-results-inner" data-astro-cid-37fxchfa> <ul class="search-results-list" id="search-results-list" role="listbox" data-astro-cid-37fxchfa></ul> </div> </div> <main id="main" data-astro-cid-37fxchfa>  <article class="article container" data-astro-cid-gjtny2mx> <div class="article-main" data-astro-cid-gjtny2mx> <a class="back-link" href="/blog/" data-astro-cid-gjtny2mx> <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" data-astro-cid-gjtny2mx><path d="M13 8H3M8 3 3 8l5 5" data-astro-cid-gjtny2mx></path></svg> Blog </a> <header class="article-header" data-astro-cid-gjtny2mx> <span class="eyebrow" data-astro-cid-gjtny2mx>Engineering</span> <h1 data-astro-cid-gjtny2mx>Agentic AI Architecture, Part 2: Building Production AI Agent Systems</h1> <p class="dek" data-astro-cid-gjtny2mx>A production playbook for agentic AI systems: orchestration patterns, multi-agent design, retrieval repair, observability, evaluation, cost control, and implementation structure.</p> <div class="article-meta" data-astro-cid-gjtny2mx> <time datetime="2026-06-04T00:00:00.000Z" data-astro-cid-gjtny2mx>June 4, 2026</time> <span data-astro-cid-gjtny2mx>13 min read</span> <span class="tag-pill" data-astro-cid-gjtny2mx>AI Agents</span><span class="tag-pill" data-astro-cid-gjtny2mx>Agentic AI</span><span class="tag-pill" data-astro-cid-gjtny2mx>Orchestration</span> </div> </header> <div class="prose" data-astro-cid-gjtny2mx>  <p>Part 1 covered the architecture of reliable AI agents: bounded decision-making, structured state, validated tools, shared retrieval, layered guardrails, and traceable final answers.</p>
+<p>Part 2 is about implementation.</p>
+<p>The goal is not to build the most elaborate agent framework possible. The goal is to build an agent system that can complete useful work, fail safely, expose its reasoning path, and improve through evaluation.</p>
+<p>Production agent systems need four things:</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="text"><code><span class="line"><span>clear orchestration</span></span>
+<span class="line"><span>observable runtime behavior</span></span>
+<span class="line"><span>measurable quality</span></span>
+<span class="line"><span>controlled cost and latency</span></span></code></pre>
+<p>If one of those is missing, the system may work in demos but become difficult to operate.</p>
+<figure class="mermaid-figure" data-astro-cid-qz3dz2lk> <figcaption data-astro-cid-qz3dz2lk>Implementation pillars</figcaption> <pre class="mermaid" data-astro-cid-qz3dz2lk>flowchart TD
+A[Production agent system]
+A --&gt; O[Clear orchestration]
+A --&gt; T[Observable runtime]
+A --&gt; E[Measurable quality]
+A --&gt; C[Controlled cost and latency]
+O --&gt; P[Planner-executor]
+T --&gt; Tr[Traces and metrics]
+E --&gt; Eval[Layered evals]
+C --&gt; B[Budgets and model routing]</pre> </figure> <script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+
+  const isDark = document.documentElement.dataset.theme === "dark";
+  const themeVariables = isDark
+    ? {
+        background: "#14161e",
+        mainBkg: "#1a1d28",
+        secondBkg: "#222638",
+        tertiaryColor: "#202433",
+        primaryColor: "#1a1d28",
+        primaryTextColor: "#eceef8",
+        primaryBorderColor: "#79863c",
+        secondaryColor: "#202433",
+        secondaryTextColor: "#eceef8",
+        secondaryBorderColor: "#2a2f43",
+        clusterBkg: "#14161e",
+        clusterBorder: "#2a2f43",
+        edgeLabelBackground: "#14161e",
+        lineColor: "#79863c",
+        textColor: "#eceef8",
+        nodeTextColor: "#eceef8",
+        fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif",
+      }
+    : {
+        background: "#fafaf8",
+        mainBkg: "#ffffff",
+        secondBkg: "#fafaf8",
+        tertiaryColor: "#f3f3ef",
+        primaryColor: "#ffffff",
+        primaryTextColor: "#101114",
+        primaryBorderColor: "#79863c",
+        secondaryColor: "#fafaf8",
+        secondaryTextColor: "#101114",
+        secondaryBorderColor: "#d8d8cf",
+        clusterBkg: "#fafaf8",
+        clusterBorder: "#d8d8cf",
+        edgeLabelBackground: "#ffffff",
+        lineColor: "#79863c",
+        textColor: "#101114",
+        nodeTextColor: "#101114",
+        fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif",
+      };
+
+  if (!window.__ginkgoqMermaidReady) {
+    window.__ginkgoqMermaidReady = true;
+    mermaid.initialize({
+      startOnLoad: false,
+      securityLevel: "strict",
+      theme: "base",
+      themeVariables,
+    });
+  }
+
+  await mermaid.run({ querySelector: ".mermaid" });
+</script>
+<h2 id="start-with-the-smallest-orchestration-that-works">Start with the smallest orchestration that works</h2>
+<p>Agentic AI does not always require multi-agent collaboration. Most production workflows should begin with a planner-executor pattern.</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="text"><code><span class="line"><span>user request</span></span>
+<span class="line"><span>  -&gt; router</span></span>
+<span class="line"><span>  -&gt; planner</span></span>
+<span class="line"><span>  -&gt; runtime</span></span>
+<span class="line"><span>  -&gt; tools / retrieval</span></span>
+<span class="line"><span>  -&gt; evaluator</span></span>
+<span class="line"><span>  -&gt; final synthesizer</span></span></code></pre>
+<p>This design is easier to test than a group of agents talking to each other. It also gives the engineering team clear places to add logging, validation, and cost controls.</p>
+<p>Use more complex orchestration only when the task requires it.</p>
+<figure class="mermaid-figure" data-astro-cid-qz3dz2lk> <figcaption data-astro-cid-qz3dz2lk>Planner-executor default</figcaption> <pre class="mermaid" data-astro-cid-qz3dz2lk>sequenceDiagram
+participant User
+participant Router
+participant Planner
+participant Runtime
+participant Tools
+participant Evaluator
+participant Synthesizer
+User-&gt;&gt;Router: request + current state
+Router-&gt;&gt;Planner: selected workflow
+Planner-&gt;&gt;Runtime: structured action packet
+Runtime-&gt;&gt;Runtime: validate action and budget
+Runtime-&gt;&gt;Tools: execute approved calls
+Tools--&gt;&gt;Runtime: results
+Runtime-&gt;&gt;Evaluator: evidence and tool outputs
+Evaluator--&gt;&gt;Synthesizer: approved claims
+Synthesizer--&gt;&gt;User: final answer</pre> </figure> <script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+
+  const isDark = document.documentElement.dataset.theme === "dark";
+  const themeVariables = isDark
+    ? {
+        background: "#14161e",
+        mainBkg: "#1a1d28",
+        secondBkg: "#222638",
+        tertiaryColor: "#202433",
+        primaryColor: "#1a1d28",
+        primaryTextColor: "#eceef8",
+        primaryBorderColor: "#79863c",
+        secondaryColor: "#202433",
+        secondaryTextColor: "#eceef8",
+        secondaryBorderColor: "#2a2f43",
+        clusterBkg: "#14161e",
+        clusterBorder: "#2a2f43",
+        edgeLabelBackground: "#14161e",
+        lineColor: "#79863c",
+        textColor: "#eceef8",
+        nodeTextColor: "#eceef8",
+        fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif",
+      }
+    : {
+        background: "#fafaf8",
+        mainBkg: "#ffffff",
+        secondBkg: "#fafaf8",
+        tertiaryColor: "#f3f3ef",
+        primaryColor: "#ffffff",
+        primaryTextColor: "#101114",
+        primaryBorderColor: "#79863c",
+        secondaryColor: "#fafaf8",
+        secondaryTextColor: "#101114",
+        secondaryBorderColor: "#d8d8cf",
+        clusterBkg: "#fafaf8",
+        clusterBorder: "#d8d8cf",
+        edgeLabelBackground: "#ffffff",
+        lineColor: "#79863c",
+        textColor: "#101114",
+        nodeTextColor: "#101114",
+        fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif",
+      };
+
+  if (!window.__ginkgoqMermaidReady) {
+    window.__ginkgoqMermaidReady = true;
+    mermaid.initialize({
+      startOnLoad: false,
+      securityLevel: "strict",
+      theme: "base",
+      themeVariables,
+    });
+  }
+
+  await mermaid.run({ querySelector: ".mermaid" });
+</script>
+<h2 id="five-orchestration-patterns-worth-knowing">Five orchestration patterns worth knowing</h2>
+<h3 id="1-sequential-workflow">1. Sequential workflow</h3>
+<p>Use a sequential workflow when the steps are known and each step depends on the previous one.</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="text"><code><span class="line"><span>extract</span></span>
+<span class="line"><span>  -&gt; normalize</span></span>
+<span class="line"><span>  -&gt; validate</span></span>
+<span class="line"><span>  -&gt; score confidence</span></span>
+<span class="line"><span>  -&gt; generate answer</span></span></code></pre>
+<p>Good fit:</p>
+<ul>
+<li>document extraction</li>
+<li>intake forms</li>
+<li>compliance checks</li>
+<li>report generation</li>
+<li>structured classification pipelines</li>
+</ul>
+<p>Sequential systems are not glamorous, but they are often the most reliable option.</p>
+<h3 id="2-planner-executor">2. Planner-executor</h3>
+<p>Planner-executor is the best default for many agent workflows.</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="text"><code><span class="line"><span>planner creates action packet</span></span>
+<span class="line"><span>runtime validates action</span></span>
+<span class="line"><span>executor runs tools</span></span>
+<span class="line"><span>synthesizer writes final answer</span></span></code></pre>
+<p>The planner does not execute anything. It returns a structured decision. The runtime owns execution.</p>
+<p>This pattern works well for:</p>
+<ul>
+<li>support agents</li>
+<li>document analysis</li>
+<li>research assistants</li>
+<li>workflow copilots</li>
+<li>internal operations tools</li>
+</ul>
+<p>It keeps the model in the right role: deciding what should happen next, not silently controlling the whole system.</p>
+<h3 id="3-parallel-tool-execution">3. Parallel tool execution</h3>
+<p>Use parallel execution when the agent needs independent evidence or independent tool calls.</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="text"><code><span class="line"><span>planner</span></span>
+<span class="line"><span>  -&gt; [retrieve policy, query account, inspect document] in parallel</span></span>
+<span class="line"><span>  -&gt; join results</span></span>
+<span class="line"><span>  -&gt; evaluate coverage</span></span>
+<span class="line"><span>  -&gt; synthesize answer</span></span></code></pre>
+<p>Parallel execution is one of the most practical cost and latency improvements in agentic AI. It avoids the slow loop where the model thinks, calls one tool, waits, thinks again, calls another tool, and repeats.</p>
+<p>Good fit:</p>
+<ul>
+<li>multi-source research</li>
+<li>account plus policy lookup</li>
+<li>document comparison</li>
+<li>independent retrieval targets</li>
+<li>agent workflows with several deterministic tools</li>
+</ul>
+<p>The runtime should decide which calls can run in parallel. Do not leave that implicit in free-form model output.</p>
+<h3 id="4-handoff-routing">4. Handoff routing</h3>
+<p>Handoff is useful when ownership of the task should move from one workflow to another.</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="text"><code><span class="line"><span>router</span></span>
+<span class="line"><span>  -&gt; intake agent</span></span>
+<span class="line"><span>  -&gt; specialist agent</span></span>
+<span class="line"><span>  -&gt; final workflow owner</span></span></code></pre>
+<p>Use handoff when:</p>
+<ul>
+<li>a different toolset is required</li>
+<li>the workflow stage changes</li>
+<li>a specialist has a stricter output contract</li>
+<li>human review becomes necessary</li>
+<li>the original workflow no longer owns the next step</li>
+</ul>
+<p>Handoff should be explicit in state:</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="json"><code><span class="line"><span style="color:#E1E4E8">{</span></span>
+<span class="line"><span style="color:#79B8FF">  &quot;handoff_allowed&quot;</span><span style="color:#E1E4E8">: </span><span style="color:#79B8FF">true</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#79B8FF">  &quot;handoff_target&quot;</span><span style="color:#E1E4E8">: </span><span style="color:#9ECBFF">&quot;contract_risk_review&quot;</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#79B8FF">  &quot;handoff_reason&quot;</span><span style="color:#E1E4E8">: </span><span style="color:#9ECBFF">&quot;User moved from clause lookup to risk assessment.&quot;</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span></code></pre>
+<p>Do not let the model silently change workflows. Silent handoffs are hard to debug and can produce inconsistent behavior.</p>
+<h3 id="5-multi-agent-orchestration">5. Multi-agent orchestration</h3>
+<p>Multi-agent systems are useful when there is a real division of labor.</p>
+<p>Use multiple agents when:</p>
+<ul>
+<li>subtasks require different tools</li>
+<li>specialists need different prompts and schemas</li>
+<li>independent work can run in parallel</li>
+<li>a manager must track progress across subtasks</li>
+<li>human review belongs at a specific stage</li>
+<li>outputs need specialist validation before synthesis</li>
+</ul>
+<p>Do not use multiple agents when one structured planner can do the job.</p>
+<p>The practical rule:</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="text"><code><span class="line"><span>Multi-agent is an orchestration pattern, not proof of sophistication.</span></span></code></pre>
+<p>If agents are only chatting with each other, the system is probably more expensive than it needs to be.</p>
+<figure class="mermaid-figure" data-astro-cid-qz3dz2lk> <figcaption data-astro-cid-qz3dz2lk>Choosing an orchestration pattern</figcaption> <pre class="mermaid" data-astro-cid-qz3dz2lk>flowchart LR
+Task[Task shape] --&gt; Known{Known fixed steps?}
+Known --&gt;|yes| Sequential[Sequential workflow]
+Known --&gt;|no| NeedsTools{Independent tools or evidence?}
+NeedsTools --&gt;|yes| Parallel[Planner + parallel execution]
+NeedsTools --&gt;|no| HandoffQ{Different owner needed?}
+HandoffQ --&gt;|yes| Handoff[Explicit handoff]
+HandoffQ --&gt;|no| Planner[Planner-executor]
+Parallel --&gt; Complex{Open-ended and long running?}
+Complex --&gt;|yes| Magentic[Magentic orchestration]
+Complex --&gt;|no| Planner</pre> </figure> <script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+
+  const isDark = document.documentElement.dataset.theme === "dark";
+  const themeVariables = isDark
+    ? {
+        background: "#14161e",
+        mainBkg: "#1a1d28",
+        secondBkg: "#222638",
+        tertiaryColor: "#202433",
+        primaryColor: "#1a1d28",
+        primaryTextColor: "#eceef8",
+        primaryBorderColor: "#79863c",
+        secondaryColor: "#202433",
+        secondaryTextColor: "#eceef8",
+        secondaryBorderColor: "#2a2f43",
+        clusterBkg: "#14161e",
+        clusterBorder: "#2a2f43",
+        edgeLabelBackground: "#14161e",
+        lineColor: "#79863c",
+        textColor: "#eceef8",
+        nodeTextColor: "#eceef8",
+        fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif",
+      }
+    : {
+        background: "#fafaf8",
+        mainBkg: "#ffffff",
+        secondBkg: "#fafaf8",
+        tertiaryColor: "#f3f3ef",
+        primaryColor: "#ffffff",
+        primaryTextColor: "#101114",
+        primaryBorderColor: "#79863c",
+        secondaryColor: "#fafaf8",
+        secondaryTextColor: "#101114",
+        secondaryBorderColor: "#d8d8cf",
+        clusterBkg: "#fafaf8",
+        clusterBorder: "#d8d8cf",
+        edgeLabelBackground: "#ffffff",
+        lineColor: "#79863c",
+        textColor: "#101114",
+        nodeTextColor: "#101114",
+        fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif",
+      };
+
+  if (!window.__ginkgoqMermaidReady) {
+    window.__ginkgoqMermaidReady = true;
+    mermaid.initialize({
+      startOnLoad: false,
+      securityLevel: "strict",
+      theme: "base",
+      themeVariables,
+    });
+  }
+
+  await mermaid.run({ querySelector: ".mermaid" });
+</script>
+<h2 id="magentic-style-orchestration">Magentic-style orchestration</h2>
+<p>Magentic-style systems use a lead orchestrator that creates tasks, assigns work, tracks progress, validates results, and replans when blocked.</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="text"><code><span class="line"><span>orchestrator</span></span>
+<span class="line"><span>  -&gt; creates task list</span></span>
+<span class="line"><span>  -&gt; assigns subtasks</span></span>
+<span class="line"><span>  -&gt; watches progress</span></span>
+<span class="line"><span>  -&gt; validates outputs</span></span>
+<span class="line"><span>  -&gt; repairs failed tasks</span></span>
+<span class="line"><span>  -&gt; synthesizes final result</span></span></code></pre>
+<p>This pattern is useful for open-ended work:</p>
+<ul>
+<li>codebase analysis</li>
+<li>research across many sources</li>
+<li>data analysis projects</li>
+<li>long document generation</li>
+<li>web, file, and code workflows</li>
+<li>multi-step operations with uncertain paths</li>
+</ul>
+<p>It is usually the wrong fit for simple question answering, one retrieval call, or routine API work.</p>
+<p>Keep the plan outside the chat transcript:</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="json"><code><span class="line"><span style="color:#E1E4E8">{</span></span>
+<span class="line"><span style="color:#79B8FF">  &quot;task_plan&quot;</span><span style="color:#E1E4E8">: [</span></span>
+<span class="line"><span style="color:#E1E4E8">    {</span></span>
+<span class="line"><span style="color:#79B8FF">      &quot;task_id&quot;</span><span style="color:#E1E4E8">: </span><span style="color:#9ECBFF">&quot;inspect_repository&quot;</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#79B8FF">      &quot;owner&quot;</span><span style="color:#E1E4E8">: </span><span style="color:#9ECBFF">&quot;code_reader&quot;</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#79B8FF">      &quot;depends_on&quot;</span><span style="color:#E1E4E8">: [],</span></span>
+<span class="line"><span style="color:#79B8FF">      &quot;status&quot;</span><span style="color:#E1E4E8">: </span><span style="color:#9ECBFF">&quot;done&quot;</span></span>
+<span class="line"><span style="color:#E1E4E8">    },</span></span>
+<span class="line"><span style="color:#E1E4E8">    {</span></span>
+<span class="line"><span style="color:#79B8FF">      &quot;task_id&quot;</span><span style="color:#E1E4E8">: </span><span style="color:#9ECBFF">&quot;run_regression_tests&quot;</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#79B8FF">      &quot;owner&quot;</span><span style="color:#E1E4E8">: </span><span style="color:#9ECBFF">&quot;test_runner&quot;</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#79B8FF">      &quot;depends_on&quot;</span><span style="color:#E1E4E8">: [</span><span style="color:#9ECBFF">&quot;inspect_repository&quot;</span><span style="color:#E1E4E8">],</span></span>
+<span class="line"><span style="color:#79B8FF">      &quot;status&quot;</span><span style="color:#E1E4E8">: </span><span style="color:#9ECBFF">&quot;pending&quot;</span></span>
+<span class="line"><span style="color:#E1E4E8">    }</span></span>
+<span class="line"><span style="color:#E1E4E8">  ]</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span></code></pre>
+<p>External task state makes progress visible. It also lets the system retry, pause, resume, and explain what happened.</p>
+<h2 id="retrieval-repair-fix-the-weak-target-not-the-whole-answer">Retrieval repair: fix the weak target, not the whole answer</h2>
+<p>Agentic systems often fail because retrieval is treated as a single top-k operation. A better approach is to retrieve by evidence target.</p>
+<p>Example:</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="json"><code><span class="line"><span style="color:#E1E4E8">{</span></span>
+<span class="line"><span style="color:#79B8FF">  &quot;targets&quot;</span><span style="color:#E1E4E8">: [</span></span>
+<span class="line"><span style="color:#E1E4E8">    {</span></span>
+<span class="line"><span style="color:#79B8FF">      &quot;target_id&quot;</span><span style="color:#E1E4E8">: </span><span style="color:#9ECBFF">&quot;refund_policy&quot;</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#79B8FF">      &quot;must_cover&quot;</span><span style="color:#E1E4E8">: </span><span style="color:#79B8FF">true</span></span>
+<span class="line"><span style="color:#E1E4E8">    },</span></span>
+<span class="line"><span style="color:#E1E4E8">    {</span></span>
+<span class="line"><span style="color:#79B8FF">      &quot;target_id&quot;</span><span style="color:#E1E4E8">: </span><span style="color:#9ECBFF">&quot;customer_purchase_history&quot;</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#79B8FF">      &quot;must_cover&quot;</span><span style="color:#E1E4E8">: </span><span style="color:#79B8FF">true</span></span>
+<span class="line"><span style="color:#E1E4E8">    },</span></span>
+<span class="line"><span style="color:#E1E4E8">    {</span></span>
+<span class="line"><span style="color:#79B8FF">      &quot;target_id&quot;</span><span style="color:#E1E4E8">: </span><span style="color:#9ECBFF">&quot;exception_rules&quot;</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#79B8FF">      &quot;must_cover&quot;</span><span style="color:#E1E4E8">: </span><span style="color:#79B8FF">false</span></span>
+<span class="line"><span style="color:#E1E4E8">    }</span></span>
+<span class="line"><span style="color:#E1E4E8">  ]</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span></code></pre>
+<p>After retrieval, evaluate each target separately:</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="python"><code><span class="line"><span style="color:#F97583">for</span><span style="color:#E1E4E8"> target </span><span style="color:#F97583">in</span><span style="color:#E1E4E8"> retrieval_targets:</span></span>
+<span class="line"><span style="color:#E1E4E8">    evidence </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> retrieve(target)</span></span>
+<span class="line"><span style="color:#E1E4E8">    coverage </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> evaluate_coverage(target, evidence)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">    if</span><span style="color:#E1E4E8"> coverage </span><span style="color:#F97583">==</span><span style="color:#9ECBFF"> &quot;supported&quot;</span><span style="color:#E1E4E8">:</span></span>
+<span class="line"><span style="color:#E1E4E8">        keep(evidence)</span></span>
+<span class="line"><span style="color:#F97583">    elif</span><span style="color:#E1E4E8"> coverage </span><span style="color:#F97583">==</span><span style="color:#9ECBFF"> &quot;partial&quot;</span><span style="color:#E1E4E8">:</span></span>
+<span class="line"><span style="color:#E1E4E8">        refine_only_this_target(target)</span></span>
+<span class="line"><span style="color:#F97583">    else</span><span style="color:#E1E4E8">:</span></span>
+<span class="line"><span style="color:#E1E4E8">        ask_clarification_or_report_missing_evidence(target)</span></span></code></pre>
+<p>This is called target-local repair. It avoids rerunning the entire pipeline when only one evidence target is weak.</p>
+<figure class="mermaid-figure" data-astro-cid-qz3dz2lk> <figcaption data-astro-cid-qz3dz2lk>Target-local retrieval repair</figcaption> <pre class="mermaid" data-astro-cid-qz3dz2lk>flowchart TD
+Plan[Evidence target plan] --&gt; R1[Retrieve per target]
+R1 --&gt; C{Coverage check}
+C --&gt;|all supported| S[Synthesize answer]
+C --&gt;|one target partial| W[Select weak target]
+W --&gt; Q[Rewrite query for weak target]
+Q --&gt; R2[Retrieve only weak target]
+R2 --&gt; C
+C --&gt;|missing critical evidence| Ask[Ask clarification or route to review]</pre> </figure> <script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+
+  const isDark = document.documentElement.dataset.theme === "dark";
+  const themeVariables = isDark
+    ? {
+        background: "#14161e",
+        mainBkg: "#1a1d28",
+        secondBkg: "#222638",
+        tertiaryColor: "#202433",
+        primaryColor: "#1a1d28",
+        primaryTextColor: "#eceef8",
+        primaryBorderColor: "#79863c",
+        secondaryColor: "#202433",
+        secondaryTextColor: "#eceef8",
+        secondaryBorderColor: "#2a2f43",
+        clusterBkg: "#14161e",
+        clusterBorder: "#2a2f43",
+        edgeLabelBackground: "#14161e",
+        lineColor: "#79863c",
+        textColor: "#eceef8",
+        nodeTextColor: "#eceef8",
+        fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif",
+      }
+    : {
+        background: "#fafaf8",
+        mainBkg: "#ffffff",
+        secondBkg: "#fafaf8",
+        tertiaryColor: "#f3f3ef",
+        primaryColor: "#ffffff",
+        primaryTextColor: "#101114",
+        primaryBorderColor: "#79863c",
+        secondaryColor: "#fafaf8",
+        secondaryTextColor: "#101114",
+        secondaryBorderColor: "#d8d8cf",
+        clusterBkg: "#fafaf8",
+        clusterBorder: "#d8d8cf",
+        edgeLabelBackground: "#ffffff",
+        lineColor: "#79863c",
+        textColor: "#101114",
+        nodeTextColor: "#101114",
+        fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif",
+      };
+
+  if (!window.__ginkgoqMermaidReady) {
+    window.__ginkgoqMermaidReady = true;
+    mermaid.initialize({
+      startOnLoad: false,
+      securityLevel: "strict",
+      theme: "base",
+      themeVariables,
+    });
+  }
+
+  await mermaid.run({ querySelector: ".mermaid" });
+</script>
+<p>Bad repair:</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="text"><code><span class="line"><span>one target fails</span></span>
+<span class="line"><span>  -&gt; rerun all retrieval</span></span>
+<span class="line"><span>  -&gt; new context changes the answer</span></span>
+<span class="line"><span>  -&gt; cost increases</span></span></code></pre>
+<p>Better repair:</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="text"><code><span class="line"><span>one target fails</span></span>
+<span class="line"><span>  -&gt; refine that target only</span></span>
+<span class="line"><span>  -&gt; reuse validated evidence</span></span>
+<span class="line"><span>  -&gt; preserve answer stability</span></span></code></pre>
+<p>This is one of the simplest ways to improve quality without making the whole system slower.</p>
+<h2 id="observability-is-not-optional">Observability is not optional</h2>
+<p>If you cannot trace an agent workflow, you cannot improve it.</p>
+<p>A useful trace captures the path from user input to final answer:</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="json"><code><span class="line"><span style="color:#E1E4E8">{</span></span>
+<span class="line"><span style="color:#79B8FF">  &quot;trace_id&quot;</span><span style="color:#E1E4E8">: </span><span style="color:#9ECBFF">&quot;tr_001&quot;</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#79B8FF">  &quot;session_id&quot;</span><span style="color:#E1E4E8">: </span><span style="color:#9ECBFF">&quot;sess_184&quot;</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#79B8FF">  &quot;active_workflow&quot;</span><span style="color:#E1E4E8">: </span><span style="color:#9ECBFF">&quot;support_refund&quot;</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#79B8FF">  &quot;planner_model&quot;</span><span style="color:#E1E4E8">: </span><span style="color:#9ECBFF">&quot;planner_model_name&quot;</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#79B8FF">  &quot;action&quot;</span><span style="color:#E1E4E8">: </span><span style="color:#9ECBFF">&quot;retrieve_and_call_tools&quot;</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#79B8FF">  &quot;state_delta&quot;</span><span style="color:#E1E4E8">: {},</span></span>
+<span class="line"><span style="color:#79B8FF">  &quot;tool_calls&quot;</span><span style="color:#E1E4E8">: [],</span></span>
+<span class="line"><span style="color:#79B8FF">  &quot;retrieval_targets&quot;</span><span style="color:#E1E4E8">: [],</span></span>
+<span class="line"><span style="color:#79B8FF">  &quot;retrieved_chunk_ids&quot;</span><span style="color:#E1E4E8">: [],</span></span>
+<span class="line"><span style="color:#79B8FF">  &quot;coverage&quot;</span><span style="color:#E1E4E8">: {},</span></span>
+<span class="line"><span style="color:#79B8FF">  &quot;latency_ms&quot;</span><span style="color:#E1E4E8">: {},</span></span>
+<span class="line"><span style="color:#79B8FF">  &quot;tokens&quot;</span><span style="color:#E1E4E8">: {},</span></span>
+<span class="line"><span style="color:#79B8FF">  &quot;cost_usd&quot;</span><span style="color:#E1E4E8">: {},</span></span>
+<span class="line"><span style="color:#79B8FF">  &quot;errors&quot;</span><span style="color:#E1E4E8">: [],</span></span>
+<span class="line"><span style="color:#79B8FF">  &quot;final_answer_id&quot;</span><span style="color:#E1E4E8">: </span><span style="color:#9ECBFF">&quot;ans_001&quot;</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span></code></pre>
+<p>At minimum, log:</p>
+<ul>
+<li>routing decision</li>
+<li>planner output</li>
+<li>state delta</li>
+<li>tool arguments</li>
+<li>tool results</li>
+<li>retrieval targets</li>
+<li>retrieved evidence IDs</li>
+<li>validation errors</li>
+<li>final claims</li>
+<li>cost and latency</li>
+<li>user-visible answer</li>
+</ul>
+<p>The trace should make failure analysis concrete. “The model answered badly” is not actionable. “The router selected the wrong workflow because the active workflow state was empty” is actionable.</p>
+<figure class="mermaid-figure" data-astro-cid-qz3dz2lk> <figcaption data-astro-cid-qz3dz2lk>Trace data flow</figcaption> <pre class="mermaid" data-astro-cid-qz3dz2lk>flowchart LR
+Input[User input] --&gt; Route[Routing event]
+Route --&gt; State[State delta]
+State --&gt; Plan[Planner output]
+Plan --&gt; Calls[Tool and retrieval calls]
+Calls --&gt; Checks[Validation and coverage]
+Checks --&gt; Answer[Final answer]
+Answer --&gt; Store[(Trace store)]
+Store --&gt; Debug[Debugging]
+Store --&gt; Evals[Regression evals]
+Store --&gt; Metrics[Cost and latency metrics]</pre> </figure> <script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+
+  const isDark = document.documentElement.dataset.theme === "dark";
+  const themeVariables = isDark
+    ? {
+        background: "#14161e",
+        mainBkg: "#1a1d28",
+        secondBkg: "#222638",
+        tertiaryColor: "#202433",
+        primaryColor: "#1a1d28",
+        primaryTextColor: "#eceef8",
+        primaryBorderColor: "#79863c",
+        secondaryColor: "#202433",
+        secondaryTextColor: "#eceef8",
+        secondaryBorderColor: "#2a2f43",
+        clusterBkg: "#14161e",
+        clusterBorder: "#2a2f43",
+        edgeLabelBackground: "#14161e",
+        lineColor: "#79863c",
+        textColor: "#eceef8",
+        nodeTextColor: "#eceef8",
+        fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif",
+      }
+    : {
+        background: "#fafaf8",
+        mainBkg: "#ffffff",
+        secondBkg: "#fafaf8",
+        tertiaryColor: "#f3f3ef",
+        primaryColor: "#ffffff",
+        primaryTextColor: "#101114",
+        primaryBorderColor: "#79863c",
+        secondaryColor: "#fafaf8",
+        secondaryTextColor: "#101114",
+        secondaryBorderColor: "#d8d8cf",
+        clusterBkg: "#fafaf8",
+        clusterBorder: "#d8d8cf",
+        edgeLabelBackground: "#ffffff",
+        lineColor: "#79863c",
+        textColor: "#101114",
+        nodeTextColor: "#101114",
+        fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif",
+      };
+
+  if (!window.__ginkgoqMermaidReady) {
+    window.__ginkgoqMermaidReady = true;
+    mermaid.initialize({
+      startOnLoad: false,
+      securityLevel: "strict",
+      theme: "base",
+      themeVariables,
+    });
+  }
+
+  await mermaid.run({ querySelector: ".mermaid" });
+</script>
+<h2 id="evaluation-needs-more-than-final-answer-grading">Evaluation needs more than final-answer grading</h2>
+<p>Agent evaluation should happen at multiple levels. Final answer quality matters, but it is not enough.</p>
+<h3 id="routing-evals">Routing evals</h3>
+<p>Test whether the system chooses the right workflow.</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="text"><code><span class="line"><span>input -&gt; expected workflow</span></span>
+<span class="line"><span>input + state -&gt; expected workflow</span></span>
+<span class="line"><span>follow-up -&gt; expected sticky workflow</span></span></code></pre>
+<h3 id="planner-evals">Planner evals</h3>
+<p>Test whether the planner returns valid action packets.</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="text"><code><span class="line"><span>schema validity</span></span>
+<span class="line"><span>right action</span></span>
+<span class="line"><span>right tool selection</span></span>
+<span class="line"><span>missing critical fields</span></span>
+<span class="line"><span>clarification quality</span></span>
+<span class="line"><span>handoff correctness</span></span></code></pre>
+<h3 id="tool-argument-evals">Tool argument evals</h3>
+<p>Test whether tool inputs are correct before the tool runs.</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="text"><code><span class="line"><span>required fields present</span></span>
+<span class="line"><span>IDs valid</span></span>
+<span class="line"><span>permissions respected</span></span>
+<span class="line"><span>date ranges correct</span></span>
+<span class="line"><span>query filters correct</span></span></code></pre>
+<h3 id="retrieval-evals">Retrieval evals</h3>
+<p>Measure whether the retrieval layer finds useful evidence.</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="text"><code><span class="line"><span>recall</span></span>
+<span class="line"><span>precision</span></span>
+<span class="line"><span>source-fit</span></span>
+<span class="line"><span>target coverage</span></span>
+<span class="line"><span>duplicate rate</span></span>
+<span class="line"><span>empty result rate</span></span>
+<span class="line"><span>context budget usage</span></span></code></pre>
+<h3 id="grounding-evals">Grounding evals</h3>
+<p>Test whether final claims are supported by approved evidence.</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="text"><code><span class="line"><span>claim supported?</span></span>
+<span class="line"><span>source relevant?</span></span>
+<span class="line"><span>unsupported claim present?</span></span>
+<span class="line"><span>citation correct?</span></span>
+<span class="line"><span>evidence contradicted?</span></span></code></pre>
+<h3 id="workflow-evals">Workflow evals</h3>
+<p>Measure the user journey, not just one model call.</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="text"><code><span class="line"><span>turn count</span></span>
+<span class="line"><span>wrong handoff rate</span></span>
+<span class="line"><span>repeated question rate</span></span>
+<span class="line"><span>tool failure recovery</span></span>
+<span class="line"><span>latency</span></span>
+<span class="line"><span>cost</span></span>
+<span class="line"><span>completion rate</span></span>
+<span class="line"><span>human review rate</span></span></code></pre>
+<p>This layered evaluation strategy makes improvement possible. You can identify whether the issue is routing, planning, retrieval, tool execution, synthesis, or policy.</p>
+<figure class="mermaid-figure" data-astro-cid-qz3dz2lk> <figcaption data-astro-cid-qz3dz2lk>Evaluation stack</figcaption> <pre class="mermaid" data-astro-cid-qz3dz2lk>flowchart TB
+Workflow[Workflow evals]
+Grounding[Grounding evals]
+Retrieval[Retrieval evals]
+ToolArgs[Tool argument evals]
+Planner[Planner evals]
+Routing[Routing evals]
+Routing --&gt; Planner --&gt; ToolArgs --&gt; Retrieval --&gt; Grounding --&gt; Workflow</pre> </figure> <script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+
+  const isDark = document.documentElement.dataset.theme === "dark";
+  const themeVariables = isDark
+    ? {
+        background: "#14161e",
+        mainBkg: "#1a1d28",
+        secondBkg: "#222638",
+        tertiaryColor: "#202433",
+        primaryColor: "#1a1d28",
+        primaryTextColor: "#eceef8",
+        primaryBorderColor: "#79863c",
+        secondaryColor: "#202433",
+        secondaryTextColor: "#eceef8",
+        secondaryBorderColor: "#2a2f43",
+        clusterBkg: "#14161e",
+        clusterBorder: "#2a2f43",
+        edgeLabelBackground: "#14161e",
+        lineColor: "#79863c",
+        textColor: "#eceef8",
+        nodeTextColor: "#eceef8",
+        fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif",
+      }
+    : {
+        background: "#fafaf8",
+        mainBkg: "#ffffff",
+        secondBkg: "#fafaf8",
+        tertiaryColor: "#f3f3ef",
+        primaryColor: "#ffffff",
+        primaryTextColor: "#101114",
+        primaryBorderColor: "#79863c",
+        secondaryColor: "#fafaf8",
+        secondaryTextColor: "#101114",
+        secondaryBorderColor: "#d8d8cf",
+        clusterBkg: "#fafaf8",
+        clusterBorder: "#d8d8cf",
+        edgeLabelBackground: "#ffffff",
+        lineColor: "#79863c",
+        textColor: "#101114",
+        nodeTextColor: "#101114",
+        fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif",
+      };
+
+  if (!window.__ginkgoqMermaidReady) {
+    window.__ginkgoqMermaidReady = true;
+    mermaid.initialize({
+      startOnLoad: false,
+      securityLevel: "strict",
+      theme: "base",
+      themeVariables,
+    });
+  }
+
+  await mermaid.run({ querySelector: ".mermaid" });
+</script>
+<h2 id="cost-and-latency-control">Cost and latency control</h2>
+<p>Most agent cost comes from unnecessary model calls and unnecessary context.</p>
+<p>Common waste:</p>
+<ul>
+<li>replaying full chat history</li>
+<li>always retrieving</li>
+<li>always running a critic</li>
+<li>sequential tool calls that could run in parallel</li>
+<li>verbose tool schemas</li>
+<li>large context stuffing</li>
+<li>unbounded multi-agent discussion</li>
+<li>using the strongest model for simple extraction</li>
+</ul>
+<p>Practical controls:</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="text"><code><span class="line"><span>compact state instead of full history</span></span>
+<span class="line"><span>one planner call per turn where possible</span></span>
+<span class="line"><span>parallel independent tools</span></span>
+<span class="line"><span>retrieve only when evidence is needed</span></span>
+<span class="line"><span>repair weak targets only</span></span>
+<span class="line"><span>use smaller models for routing and extraction</span></span>
+<span class="line"><span>reserve stronger models for planning and synthesis</span></span>
+<span class="line"><span>cap tool calls and retrieval targets</span></span>
+<span class="line"><span>cache stable prompts and embeddings</span></span>
+<span class="line"><span>stream only the final answer</span></span></code></pre>
+<p>A useful latency model:</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="text"><code><span class="line"><span>total_latency =</span></span>
+<span class="line"><span>  planner_call</span></span>
+<span class="line"><span>  + max(parallel_tool_latencies)</span></span>
+<span class="line"><span>  + optional_evaluator</span></span>
+<span class="line"><span>  + final_generation</span></span></code></pre>
+<p>If tools are sequential, latency becomes:</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="text"><code><span class="line"><span>planner + tool_1 + tool_2 + tool_3 + final_generation</span></span></code></pre>
+<p>That difference is large enough to shape the architecture.</p>
+<h2 id="repository-structure-for-production-agents">Repository structure for production agents</h2>
+<p>A practical codebase should separate agents, workflows, tools, retrieval, memory, orchestration, evaluation, and observability.</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="text"><code><span class="line"><span>app/</span></span>
+<span class="line"><span>  agents/</span></span>
+<span class="line"><span>    router.py</span></span>
+<span class="line"><span>    base.py</span></span>
+<span class="line"><span>    state.py</span></span>
+<span class="line"><span>    handoff.py</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>  workflows/</span></span>
+<span class="line"><span>    support_refund/</span></span>
+<span class="line"><span>    document_review/</span></span>
+<span class="line"><span>    research_assistant/</span></span>
+<span class="line"><span>    code_review/</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>  tools/</span></span>
+<span class="line"><span>    registry.py</span></span>
+<span class="line"><span>    runtime.py</span></span>
+<span class="line"><span>    schemas.py</span></span>
+<span class="line"><span>    validators.py</span></span>
+<span class="line"><span>    permissions.py</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>  retrieval/</span></span>
+<span class="line"><span>    task.py</span></span>
+<span class="line"><span>    target.py</span></span>
+<span class="line"><span>    engine.py</span></span>
+<span class="line"><span>    lexical.py</span></span>
+<span class="line"><span>    vector.py</span></span>
+<span class="line"><span>    fusion.py</span></span>
+<span class="line"><span>    evidence.py</span></span>
+<span class="line"><span>    context_builder.py</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>  orchestration/</span></span>
+<span class="line"><span>    planner.py</span></span>
+<span class="line"><span>    executor.py</span></span>
+<span class="line"><span>    dag.py</span></span>
+<span class="line"><span>    retries.py</span></span>
+<span class="line"><span>    budgets.py</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>  memory/</span></span>
+<span class="line"><span>    session_store.py</span></span>
+<span class="line"><span>    workflow_state.py</span></span>
+<span class="line"><span>    summaries.py</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>  evals/</span></span>
+<span class="line"><span>    routing/</span></span>
+<span class="line"><span>    planning/</span></span>
+<span class="line"><span>    retrieval/</span></span>
+<span class="line"><span>    grounding/</span></span>
+<span class="line"><span>    workflows/</span></span>
+<span class="line"><span>    regression/</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>  observability/</span></span>
+<span class="line"><span>    tracing.py</span></span>
+<span class="line"><span>    metrics.py</span></span>
+<span class="line"><span>    cost.py</span></span></code></pre>
+<p>This structure keeps complexity visible. It also prevents the system from turning into a folder of prompts with hidden runtime behavior.</p>
+<h2 id="recommended-object-model">Recommended object model</h2>
+<p>Start with a small set of explicit objects.</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="python"><code><span class="line"><span style="color:#B392F0">@dataclass</span></span>
+<span class="line"><span style="color:#F97583">class</span><span style="color:#B392F0"> AgentDecision</span><span style="color:#E1E4E8">:</span></span>
+<span class="line"><span style="color:#E1E4E8">    action: Literal[</span></span>
+<span class="line"><span style="color:#9ECBFF">        &quot;direct_answer&quot;</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#9ECBFF">        &quot;ask_clarification&quot;</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#9ECBFF">        &quot;call_tools&quot;</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#9ECBFF">        &quot;retrieve&quot;</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#9ECBFF">        &quot;handoff&quot;</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#9ECBFF">        &quot;finish&quot;</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#E1E4E8">    ]</span></span>
+<span class="line"><span style="color:#E1E4E8">    state_delta: </span><span style="color:#79B8FF">dict</span></span>
+<span class="line"><span style="color:#E1E4E8">    tool_calls: list[ToolCall]</span></span>
+<span class="line"><span style="color:#E1E4E8">    retrieval_task: RetrievalTask </span><span style="color:#F97583">|</span><span style="color:#79B8FF"> None</span></span>
+<span class="line"><span style="color:#E1E4E8">    clarification_question: </span><span style="color:#79B8FF">str</span><span style="color:#F97583"> |</span><span style="color:#79B8FF"> None</span></span>
+<span class="line"><span style="color:#E1E4E8">    handoff_target: </span><span style="color:#79B8FF">str</span><span style="color:#F97583"> |</span><span style="color:#79B8FF"> None</span></span>
+<span class="line"><span style="color:#E1E4E8">    handoff_allowed: </span><span style="color:#79B8FF">bool</span></span>
+<span class="line"><span style="color:#E1E4E8">    confidence: Literal[</span><span style="color:#9ECBFF">&quot;low&quot;</span><span style="color:#E1E4E8">, </span><span style="color:#9ECBFF">&quot;medium&quot;</span><span style="color:#E1E4E8">, </span><span style="color:#9ECBFF">&quot;high&quot;</span><span style="color:#E1E4E8">]</span></span></code></pre>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="python"><code><span class="line"><span style="color:#B392F0">@dataclass</span></span>
+<span class="line"><span style="color:#F97583">class</span><span style="color:#B392F0"> WorkflowState</span><span style="color:#E1E4E8">:</span></span>
+<span class="line"><span style="color:#E1E4E8">    active_workflow: </span><span style="color:#79B8FF">str</span></span>
+<span class="line"><span style="color:#E1E4E8">    workflow_stage: </span><span style="color:#79B8FF">str</span></span>
+<span class="line"><span style="color:#E1E4E8">    known_facts: </span><span style="color:#79B8FF">dict</span></span>
+<span class="line"><span style="color:#E1E4E8">    unknown_fields: list[</span><span style="color:#79B8FF">str</span><span style="color:#E1E4E8">]</span></span>
+<span class="line"><span style="color:#E1E4E8">    last_question: </span><span style="color:#79B8FF">str</span><span style="color:#F97583"> |</span><span style="color:#79B8FF"> None</span></span>
+<span class="line"><span style="color:#E1E4E8">    last_evidence_ids: list[</span><span style="color:#79B8FF">str</span><span style="color:#E1E4E8">]</span></span>
+<span class="line"><span style="color:#E1E4E8">    handoff_allowed: </span><span style="color:#79B8FF">bool</span></span>
+<span class="line"><span style="color:#E1E4E8">    handoff_target: </span><span style="color:#79B8FF">str</span><span style="color:#F97583"> |</span><span style="color:#79B8FF"> None</span></span></code></pre>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="python"><code><span class="line"><span style="color:#B392F0">@dataclass</span></span>
+<span class="line"><span style="color:#F97583">class</span><span style="color:#B392F0"> EvidenceTarget</span><span style="color:#E1E4E8">:</span></span>
+<span class="line"><span style="color:#E1E4E8">    target_id: </span><span style="color:#79B8FF">str</span></span>
+<span class="line"><span style="color:#E1E4E8">    text: </span><span style="color:#79B8FF">str</span></span>
+<span class="line"><span style="color:#E1E4E8">    queries: list[</span><span style="color:#79B8FF">str</span><span style="color:#E1E4E8">]</span></span>
+<span class="line"><span style="color:#E1E4E8">    must_cover: </span><span style="color:#79B8FF">bool</span></span>
+<span class="line"><span style="color:#E1E4E8">    max_chunks: </span><span style="color:#79B8FF">int</span></span>
+<span class="line"><span style="color:#E1E4E8">    preferred_sources: list[</span><span style="color:#79B8FF">str</span><span style="color:#E1E4E8">]</span></span>
+<span class="line"><span style="color:#E1E4E8">    preferred_sections: list[</span><span style="color:#79B8FF">str</span><span style="color:#E1E4E8">]</span></span></code></pre>
+<p>These objects are not bureaucracy. They are what make the runtime testable.</p>
+<h2 id="prompt-design-for-agent-systems">Prompt design for agent systems</h2>
+<p>Prompts should match the role of each model call.</p>
+<h3 id="controller-prompt">Controller prompt</h3>
+<p>The controller prompt should produce structured decisions, not polished prose.</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="text"><code><span class="line"><span>You are a workflow controller.</span></span>
+<span class="line"><span>Return only a structured action packet.</span></span>
+<span class="line"><span>Do not write the final answer.</span></span>
+<span class="line"><span>Use tools when external data or deterministic operations are needed.</span></span>
+<span class="line"><span>Ask a clarification only when missing information changes the next action.</span></span></code></pre>
+<h3 id="final-answer-prompt">Final answer prompt</h3>
+<p>The final prompt should use approved evidence and produce a user-facing response.</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="text"><code><span class="line"><span>Use only approved evidence and tool results.</span></span>
+<span class="line"><span>Do not invent unsupported claims.</span></span>
+<span class="line"><span>If evidence is partial, separate supported findings from missing information.</span></span>
+<span class="line"><span>Write clearly and concisely for the user.</span></span></code></pre>
+<h3 id="tool-description">Tool description</h3>
+<p>The tool description should shape when and how the model uses the tool.</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="text"><code><span class="line"><span>This tool retrieves contract clauses by evidence target.</span></span>
+<span class="line"><span>Use it only when the planner has created a retrieval target.</span></span>
+<span class="line"><span>Return clause IDs, section names, snippets, and scores.</span></span>
+<span class="line"><span>Do not use it to generate the final answer.</span></span></code></pre>
+<p>Different prompts for different roles reduce confusion. One giant prompt is harder to test and easier to break.</p>
+<h2 id="human-review-belongs-in-the-architecture">Human review belongs in the architecture</h2>
+<p>Some workflows need human review. Treat it as a first-class state, not an afterthought.</p>
+<p>Use human review when:</p>
+<ul>
+<li>the action has financial, legal, medical, or security impact</li>
+<li>the system lacks enough evidence</li>
+<li>the tool result conflicts with policy</li>
+<li>the user requests a destructive action</li>
+<li>the confidence score is below threshold</li>
+<li>auditability is required</li>
+</ul>
+<p>State should show the review reason:</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="json"><code><span class="line"><span style="color:#E1E4E8">{</span></span>
+<span class="line"><span style="color:#79B8FF">  &quot;status&quot;</span><span style="color:#E1E4E8">: </span><span style="color:#9ECBFF">&quot;needs_human_review&quot;</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#79B8FF">  &quot;review_reason&quot;</span><span style="color:#E1E4E8">: </span><span style="color:#9ECBFF">&quot;Refund exceeds policy threshold and account history is incomplete.&quot;</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#79B8FF">  &quot;approved_actions&quot;</span><span style="color:#E1E4E8">: [],</span></span>
+<span class="line"><span style="color:#79B8FF">  &quot;blocked_actions&quot;</span><span style="color:#E1E4E8">: [</span><span style="color:#9ECBFF">&quot;issue_refund&quot;</span><span style="color:#E1E4E8">]</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span></code></pre>
+<p>Human review is not a failure. It is a control surface.</p>
+<h2 id="implementation-checklist">Implementation checklist</h2>
+<p>Before shipping an agent workflow, confirm:</p>
+<ul>
+<li>the workflow has a clear owner</li>
+<li>state is structured and persisted</li>
+<li>planner output is schema-validated</li>
+<li>tools have narrow permissions</li>
+<li>retrieval is target-driven</li>
+<li>weak evidence can be repaired locally</li>
+<li>final answers use approved evidence</li>
+<li>traces capture routing, tools, retrieval, and cost</li>
+<li>evals exist for routing, planning, retrieval, grounding, and workflows</li>
+<li>cost and latency budgets are enforced</li>
+<li>human review paths are explicit</li>
+</ul>
+<h2 id="the-final-standard">The final standard</h2>
+<p>A production AI agent should be able to answer three questions about every response:</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="text"><code><span class="line"><span>Why did we choose this workflow?</span></span>
+<span class="line"><span>What evidence and tools supported the answer?</span></span>
+<span class="line"><span>How do we know the system behaved correctly?</span></span></code></pre>
+<p>If the system cannot answer those questions, it is not ready for serious use.</p>
+<p>The best agentic AI systems are not built by adding more agents. They are built by making each decision visible, each tool call bounded, each source traceable, and each failure measurable.</p>  </div> <div class="article-end" aria-hidden="true" data-astro-cid-gjtny2mx><span data-astro-cid-gjtny2mx>· · ·</span></div> <div class="article-actions" data-astro-cid-gjtny2mx> <button class="share-btn" id="share-btn" type="button" aria-label="Share this article" data-astro-cid-gjtny2mx> <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" data-astro-cid-gjtny2mx><circle cx="18" cy="5" r="3" data-astro-cid-gjtny2mx></circle><circle cx="6" cy="12" r="3" data-astro-cid-gjtny2mx></circle><circle cx="18" cy="19" r="3" data-astro-cid-gjtny2mx></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49" data-astro-cid-gjtny2mx></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" data-astro-cid-gjtny2mx></line></svg>
+Share this note
+</button> <a class="back-link" href="/blog/" data-astro-cid-gjtny2mx> <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" data-astro-cid-gjtny2mx><path d="M13 8H3M8 3 3 8l5 5" data-astro-cid-gjtny2mx></path></svg>
+Back to Blog </a> </div> <aside class="author-card" aria-label="About the author" data-astro-cid-gjtny2mx> <strong data-astro-cid-gjtny2mx>Arman Asgharpoor</strong> <p data-astro-cid-gjtny2mx>Designing production AI systems, extraction pipelines, evaluation frameworks, and infrastructure for real-world deployment.</p> </aside> </div> <script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"Agentic AI Architecture, Part 2: Building Production AI Agent Systems","description":"A production playbook for agentic AI systems: orchestration patterns, multi-agent design, retrieval repair, observability, evaluation, cost control, and implementation structure.","datePublished":"2026-06-04T00:00:00.000Z","dateModified":"2026-06-04T00:00:00.000Z","author":{"@type":"Person","name":"Arman Asgharpoor","jobTitle":"AI Systems Engineer","description":"Designing production AI systems, extraction pipelines, evaluation frameworks, and infrastructure for real-world deployment.","sameAs":["https://github.com/GinkgoQ","https://www.linkedin.com/company/GinkgoQ","https://huggingface.co/GinkgoQ"]},"publisher":{"@type":"Organization","name":"GinkgoQ","logo":{"@type":"ImageObject","url":"https://ginkgoq.github.io/favicon.svg"}},"image":["https://ginkgoq.github.io//images/og-default.png"],"mainEntityOfPage":{"@type":"WebPage","@id":"https://ginkgoq.github.io//blog/guide-to-agentic-ai-architecture-part-2/"}}</script> <aside class="toc" aria-label="Table of contents" data-astro-cid-vaks4sea> <h2 data-astro-cid-vaks4sea>On this page</h2> <ol data-astro-cid-vaks4sea> <li class="depth-2" data-astro-cid-vaks4sea> <a href="#start-with-the-smallest-orchestration-that-works" data-astro-cid-vaks4sea>Start with the smallest orchestration that works</a> </li><li class="depth-2" data-astro-cid-vaks4sea> <a href="#five-orchestration-patterns-worth-knowing" data-astro-cid-vaks4sea>Five orchestration patterns worth knowing</a> </li><li class="depth-3" data-astro-cid-vaks4sea> <a href="#1-sequential-workflow" data-astro-cid-vaks4sea>1. Sequential workflow</a> </li><li class="depth-3" data-astro-cid-vaks4sea> <a href="#2-planner-executor" data-astro-cid-vaks4sea>2. Planner-executor</a> </li><li class="depth-3" data-astro-cid-vaks4sea> <a href="#3-parallel-tool-execution" data-astro-cid-vaks4sea>3. Parallel tool execution</a> </li><li class="depth-3" data-astro-cid-vaks4sea> <a href="#4-handoff-routing" data-astro-cid-vaks4sea>4. Handoff routing</a> </li><li class="depth-3" data-astro-cid-vaks4sea> <a href="#5-multi-agent-orchestration" data-astro-cid-vaks4sea>5. Multi-agent orchestration</a> </li><li class="depth-2" data-astro-cid-vaks4sea> <a href="#magentic-style-orchestration" data-astro-cid-vaks4sea>Magentic-style orchestration</a> </li><li class="depth-2" data-astro-cid-vaks4sea> <a href="#retrieval-repair-fix-the-weak-target-not-the-whole-answer" data-astro-cid-vaks4sea>Retrieval repair: fix the weak target, not the whole answer</a> </li><li class="depth-2" data-astro-cid-vaks4sea> <a href="#observability-is-not-optional" data-astro-cid-vaks4sea>Observability is not optional</a> </li><li class="depth-2" data-astro-cid-vaks4sea> <a href="#evaluation-needs-more-than-final-answer-grading" data-astro-cid-vaks4sea>Evaluation needs more than final-answer grading</a> </li><li class="depth-3" data-astro-cid-vaks4sea> <a href="#routing-evals" data-astro-cid-vaks4sea>Routing evals</a> </li><li class="depth-3" data-astro-cid-vaks4sea> <a href="#planner-evals" data-astro-cid-vaks4sea>Planner evals</a> </li><li class="depth-3" data-astro-cid-vaks4sea> <a href="#tool-argument-evals" data-astro-cid-vaks4sea>Tool argument evals</a> </li><li class="depth-3" data-astro-cid-vaks4sea> <a href="#retrieval-evals" data-astro-cid-vaks4sea>Retrieval evals</a> </li><li class="depth-3" data-astro-cid-vaks4sea> <a href="#grounding-evals" data-astro-cid-vaks4sea>Grounding evals</a> </li><li class="depth-3" data-astro-cid-vaks4sea> <a href="#workflow-evals" data-astro-cid-vaks4sea>Workflow evals</a> </li><li class="depth-2" data-astro-cid-vaks4sea> <a href="#cost-and-latency-control" data-astro-cid-vaks4sea>Cost and latency control</a> </li><li class="depth-2" data-astro-cid-vaks4sea> <a href="#repository-structure-for-production-agents" data-astro-cid-vaks4sea>Repository structure for production agents</a> </li><li class="depth-2" data-astro-cid-vaks4sea> <a href="#recommended-object-model" data-astro-cid-vaks4sea>Recommended object model</a> </li><li class="depth-2" data-astro-cid-vaks4sea> <a href="#prompt-design-for-agent-systems" data-astro-cid-vaks4sea>Prompt design for agent systems</a> </li><li class="depth-3" data-astro-cid-vaks4sea> <a href="#controller-prompt" data-astro-cid-vaks4sea>Controller prompt</a> </li><li class="depth-3" data-astro-cid-vaks4sea> <a href="#final-answer-prompt" data-astro-cid-vaks4sea>Final answer prompt</a> </li><li class="depth-3" data-astro-cid-vaks4sea> <a href="#tool-description" data-astro-cid-vaks4sea>Tool description</a> </li><li class="depth-2" data-astro-cid-vaks4sea> <a href="#human-review-belongs-in-the-architecture" data-astro-cid-vaks4sea>Human review belongs in the architecture</a> </li><li class="depth-2" data-astro-cid-vaks4sea> <a href="#implementation-checklist" data-astro-cid-vaks4sea>Implementation checklist</a> </li><li class="depth-2" data-astro-cid-vaks4sea> <a href="#the-final-standard" data-astro-cid-vaks4sea>The final standard</a> </li> </ol> </aside> </article>  </main> <footer class="site-footer" role="contentinfo" aria-label="Site footer" data-astro-cid-sz7xmlte> <div class="container" data-astro-cid-sz7xmlte> <div class="footer-inner" data-astro-cid-sz7xmlte> <div class="footer-brand" data-astro-cid-sz7xmlte> <a class="footer-brand-link" href="/" aria-label="GinkgoQ home" data-astro-cid-sz7xmlte> <span class="brand-mark" aria-hidden="true" data-astro-cid-sz7xmlte> <img class="brand-logo" src="/favicon.svg" alt="GinkgoQ mark" data-astro-cid-sz7xmlte> </span> <span class="brand-word" aria-label="GINKGOQ"> <span aria-hidden="true">G</span><span aria-hidden="true">I</span><span aria-hidden="true">N</span><span aria-hidden="true">K</span><span aria-hidden="true">G</span><span aria-hidden="true">O</span><span class="brand-q" aria-hidden="true">Q</span> </span> </a> <p class="footer-brand-desc" data-astro-cid-sz7xmlte>Technical writing and engineering insights for building production AI systems. We share what we learn about extraction, evaluation, and real-world deployment.</p> <div class="footer-social" aria-label="Social links" data-astro-cid-sz7xmlte> <a class="footer-social-link" href="https://github.com/GinkgoQ" target="_blank" rel="noopener" aria-label="GitHub" data-astro-cid-sz7xmlte> <span class="footer-social-icon" data-astro-cid-sz7xmlte>
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true">
+        <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0 1 12 6.844a9.59 9.59 0 0 1 2.504.337c1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.02 10.02 0 0 0 22 12.017C22 6.484 17.522 2 12 2Z" />
+      </svg>
+    </span> <span class="sr-only" data-astro-cid-sz7xmlte>GitHub</span> </a><a class="footer-social-link" href="https://twitter.com/GinkgoQAI" target="_blank" rel="noopener" aria-label="X / Twitter" data-astro-cid-sz7xmlte> <span class="footer-social-icon" data-astro-cid-sz7xmlte>
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true">
+        <path d="M22.46 6c-.77.35-1.6.59-2.47.7a4.3 4.3 0 0 0 1.88-2.38 8.59 8.59 0 0 1-2.73 1.04 4.28 4.28 0 0 0-7.29 3.9A12.15 12.15 0 0 1 3.15 4.7a4.28 4.28 0 0 0 1.32 5.72 4.23 4.23 0 0 1-1.94-.54v.05a4.28 4.28 0 0 0 3.43 4.2 4.28 4.28 0 0 1-1.93.07 4.28 4.28 0 0 0 3.99 2.97A8.58 8.58 0 0 1 2 19.54a12.1 12.1 0 0 0 6.56 1.92c7.88 0 12.2-6.53 12.2-12.2 0-.19 0-.37-.01-.56A8.7 8.7 0 0 0 24 5.56a8.45 8.45 0 0 1-2.54.7z" />
+      </svg>
+    </span> <span class="sr-only" data-astro-cid-sz7xmlte>X / Twitter</span> </a><a class="footer-social-link" href="mailto:ai-team@ginkgoq.com" aria-label="Email" data-astro-cid-sz7xmlte> <span class="footer-social-icon" data-astro-cid-sz7xmlte>
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <rect x="3" y="5" width="18" height="14" rx="2" />
+        <path d="M3 7l9 6 9-6" />
+      </svg>
+    </span> <span class="sr-only" data-astro-cid-sz7xmlte>Email</span> </a> </div> </div> <div class="footer-col" data-astro-cid-sz7xmlte> <span class="footer-col-heading" data-astro-cid-sz7xmlte>Navigate</span> <ul class="footer-nav-list" data-astro-cid-sz7xmlte> <li data-astro-cid-sz7xmlte><a href="/start-here/" data-astro-cid-sz7xmlte>Start here</a></li><li data-astro-cid-sz7xmlte><a href="/blog/" data-astro-cid-sz7xmlte>Blog</a></li><li data-astro-cid-sz7xmlte><a href="/research-notes/" data-astro-cid-sz7xmlte>Research Notes</a></li><li data-astro-cid-sz7xmlte><a href="/roadmap/" data-astro-cid-sz7xmlte>Roadmap</a></li> </ul> </div> <div class="footer-col" data-astro-cid-sz7xmlte> <span class="footer-col-heading" style="visibility: hidden;" data-astro-cid-sz7xmlte>Navigate</span> <ul class="footer-nav-list" data-astro-cid-sz7xmlte> <li data-astro-cid-sz7xmlte><a href="/about/" data-astro-cid-sz7xmlte>About</a></li><li data-astro-cid-sz7xmlte><a href="/rss.xml" data-astro-cid-sz7xmlte>RSS</a></li><li data-astro-cid-sz7xmlte><a href="mailto:ai-team@ginkgoq.com" data-astro-cid-sz7xmlte>Contact</a></li> </ul> </div> <div class="footer-col" data-astro-cid-sz7xmlte> <span class="footer-col-heading" data-astro-cid-sz7xmlte>Topics</span> <div class="footer-tag-cloud" data-astro-cid-sz7xmlte> <a href="/blog/?tag=AI%20Systems" data-astro-cid-sz7xmlte>AI Systems</a><a href="/blog/?tag=Production%20Infrastructure" data-astro-cid-sz7xmlte>Production Infrastructure</a><a href="/blog/?tag=Extraction%20%26%20Validation" data-astro-cid-sz7xmlte>Extraction &amp; Validation</a><a href="/blog/?tag=Evaluation%20%26%20Benchmarks" data-astro-cid-sz7xmlte>Evaluation &amp; Benchmarks</a><a href="/blog/?tag=Real-World%20Deployment" data-astro-cid-sz7xmlte>Real-World Deployment</a><a href="/blog/?tag=System%20Architecture" data-astro-cid-sz7xmlte>System Architecture</a><a href="/blog/?tag=Technical%20Analysis" data-astro-cid-sz7xmlte>Technical Analysis</a> </div> </div> </div> <div class="footer-bottom" data-astro-cid-sz7xmlte> <div class="footer-bottom-inner" data-astro-cid-sz7xmlte> <span data-astro-cid-sz7xmlte>© 2026 GinkgoQ. All rights reserved.</span> <div class="footer-bottom-right" data-astro-cid-sz7xmlte> <a href="mailto:ai-team@ginkgoq.com" data-astro-cid-sz7xmlte>ai-team@ginkgoq.com</a> <span class="footer-sep" aria-hidden="true" data-astro-cid-sz7xmlte>·</span> <span data-astro-cid-sz7xmlte>Production AI systems for the real world.</span> </div> </div> </div> </div> </footer> </div> </div> <button class="back-to-top" id="back-to-top" type="button" aria-label="Back to top" data-astro-cid-37fxchfa> <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" data-astro-cid-37fxchfa> <path d="m18 15-6-6-6 6" data-astro-cid-37fxchfa></path> </svg> </button> <script>window.__SEARCH_POSTS__ = [{"title":"ASHA Hyperparameter Tuning: A Practical Tutorial for Engineers","description":"A practical guide to the Asynchronous Successive Halving Algorithm for hyperparameter tuning, with rung schedules, promotion logic, worker behavior, failure modes, and production implementation patterns.","category":"Engineering","date":"2026-06-04T00:00:00.000Z","href":"/blog/asha_tutorial/"},{"title":"Designing Evaluation Frameworks for Production AI Systems","description":"How to build AI evaluation frameworks that test routing, retrieval, tool use, grounding, workflow behavior, cost, latency, and production regressions.","category":"Engineering","date":"2026-06-04T00:00:00.000Z","href":"/blog/designing-evaluation-frameworks-for-production-ai-systems/"},{"title":"Agentic AI Architecture, Part 1: How to Design Reliable AI Agents","description":"A practical guide to agentic AI architecture: what AI agents are, where LLMs fit, and how to design reliable agent systems with state, tools, retrieval, guardrails, and evaluation.","category":"Engineering","date":"2026-06-04T00:00:00.000Z","href":"/blog/guide-to-agentic-ai-architecture-part-1/"},{"title":"Agentic AI Architecture, Part 2: Building Production AI Agent Systems","description":"A production playbook for agentic AI systems: orchestration patterns, multi-agent design, retrieval repair, observability, evaluation, cost control, and implementation structure.","category":"Engineering","date":"2026-06-04T00:00:00.000Z","href":"/blog/guide-to-agentic-ai-architecture-part-2/"},{"title":"Production RAG Architecture Beyond Vector Search","description":"How to design production retrieval systems with evidence targets, hybrid search, source-fit scoring, context packing, retrieval repair, and grounding checks.","category":"Engineering","date":"2026-06-04T00:00:00.000Z","href":"/blog/production-rag-retrieval-architecture-beyond-vector-search/"},{"title":"Why Model Performance Does Not Determine System Reliability","description":"Benchmarks are useful, but production AI reliability depends on retrieval quality, validation, observability, fallback behavior, and evaluation across the full system.","category":"Research Note","date":"2026-05-12T00:00:00.000Z","href":"/research-notes/why-real-world-ai-systems-need-more-than-models/"},{"title":"Building Reliable Extraction Pipelines for Document Understanding","description":"A practical guide to designing document AI pipelines with structured extraction, validation, confidence scoring, provenance, human review, and production observability.","category":"Engineering","date":"2026-05-08T00:00:00.000Z","href":"/blog/building-reliable-ai-pipelines-for-document-understanding/"},{"title":"From RAG to Domain Intelligence","description":"Why retrieval-augmented generation is only the first layer of production AI, and how extraction, validation, provenance, and domain reasoning turn retrieved text into usable intelligence.","category":"Research Note","date":"2026-05-04T00:00:00.000Z","href":"/research-notes/from-rag-to-domain-intelligence/"}];</script> <script src="/scripts/ui.js" defer></script> </body> </html> 

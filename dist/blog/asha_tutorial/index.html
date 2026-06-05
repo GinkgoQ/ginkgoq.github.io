@@ -1,0 +1,1578 @@
+<!DOCTYPE html><html lang="en" data-theme="light" data-astro-cid-37fxchfa> <!-- Google tag (gtag.js) --> <head><script async src="https://www.googletagmanager.com/gtag/js?id=G-FHHNFNDEPZ"></script><script type="module">window.dataLayer=window.dataLayer||[];function a(){dataLayer.push(arguments)}a("js",new Date);a("config","G-FHHNFNDEPZ");</script><link rel="manifest" href="/site.webmanifest"><link rel="alternate" type="application/rss+xml" title="GinkgoQ RSS Feed" href="/rss.xml"><link rel="author" href="/humans.txt"><meta charset="UTF-8"><meta name="description" content="A practical guide to the Asynchronous Successive Halving Algorithm for hyperparameter tuning, with rung schedules, promotion logic, worker behavior, failure modes, and production implementation patterns."><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="Astro v6.3.5"><title>ASHA Hyperparameter Tuning: A Practical Tutorial for Engineers — GinkgoQ</title><meta property="og:title" content="ASHA Hyperparameter Tuning: A Practical Tutorial for Engineers — GinkgoQ"><meta property="og:description" content="A practical guide to the Asynchronous Successive Halving Algorithm for hyperparameter tuning, with rung schedules, promotion logic, worker behavior, failure modes, and production implementation patterns."><meta property="og:type" content="article"><meta property="og:url" content="https://ginkgoq.github.io/blog/asha_tutorial/"><meta property="og:image" content="https://ginkgoq.github.io//images/og-default.png"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="ASHA Hyperparameter Tuning: A Practical Tutorial for Engineers — GinkgoQ"><meta name="twitter:description" content="A practical guide to the Asynchronous Successive Halving Algorithm for hyperparameter tuning, with rung schedules, promotion logic, worker behavior, failure modes, and production implementation patterns."><meta name="twitter:image" content="https://ginkgoq.github.io//images/og-default.png"><link rel="icon" href="/favicon.svg"><link rel="canonical" href="https://ginkgoq.github.io/blog/asha_tutorial/"><script type="application/ld+json">[{"@type":"Organization","@context":"https://schema.org","name":"GinkgoQ","url":"https://ginkgoq.github.io","logo":{"@type":"ImageObject","url":"https://ginkgoq.github.io/favicon.svg"}},{"@type":"WebSite","@context":"https://schema.org","url":"https://ginkgoq.github.io","name":"GinkgoQ","publisher":{"@type":"Organization","name":"GinkgoQ"}}]</script><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="true"><link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet"><link rel="stylesheet" href="/_astro/404.D3HxzjoC.css"><style>.mermaid-figure[data-astro-cid-qz3dz2lk]{margin:2rem 0;padding:1rem;border:1px solid var(--color-line);border-radius:var(--radius-sm);background:var(--color-surface-2);overflow-x:auto;transition:background-color .24s var(--ease),border-color .24s var(--ease)}.mermaid-figure[data-astro-cid-qz3dz2lk] figcaption[data-astro-cid-qz3dz2lk]{margin:0 0 .85rem;color:var(--color-subtle);font-family:var(--font-mono);font-size:.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase}.mermaid[data-astro-cid-qz3dz2lk]{min-width:620px;margin:0;background:transparent}.mermaid[data-astro-cid-qz3dz2lk] svg{display:block;max-width:none;color:var(--color-text)}.mermaid[data-astro-cid-qz3dz2lk] .node rect,.mermaid[data-astro-cid-qz3dz2lk] .node circle,.mermaid[data-astro-cid-qz3dz2lk] .node ellipse,.mermaid[data-astro-cid-qz3dz2lk] .node polygon,.mermaid[data-astro-cid-qz3dz2lk] .node path{fill:var(--color-surface)!important;stroke:var(--color-accent)!important}.mermaid[data-astro-cid-qz3dz2lk] .cluster rect{fill:var(--color-surface-2)!important;stroke:var(--color-line)!important}.mermaid[data-astro-cid-qz3dz2lk] .edgePath path,.mermaid[data-astro-cid-qz3dz2lk] .flowchart-link,.mermaid[data-astro-cid-qz3dz2lk] .transition,.mermaid[data-astro-cid-qz3dz2lk] .messageLine0,.mermaid[data-astro-cid-qz3dz2lk] .messageLine1{stroke:var(--color-accent)!important}.mermaid[data-astro-cid-qz3dz2lk] .arrowheadPath,.mermaid[data-astro-cid-qz3dz2lk] marker path{fill:var(--color-accent)!important;stroke:var(--color-accent)!important}.mermaid[data-astro-cid-qz3dz2lk] text,.mermaid[data-astro-cid-qz3dz2lk] .label,.mermaid[data-astro-cid-qz3dz2lk] .nodeLabel,.mermaid[data-astro-cid-qz3dz2lk] .edgeLabel,.mermaid[data-astro-cid-qz3dz2lk] .actor,.mermaid[data-astro-cid-qz3dz2lk] .messageText,.mermaid[data-astro-cid-qz3dz2lk] .stateLabel,.mermaid[data-astro-cid-qz3dz2lk] .labelText{fill:var(--color-text)!important;color:var(--color-text)!important}.mermaid[data-astro-cid-qz3dz2lk] .edgeLabel,.mermaid[data-astro-cid-qz3dz2lk] .edgeLabel p,.mermaid[data-astro-cid-qz3dz2lk] .labelBkg{background:var(--color-surface-2)!important;fill:var(--color-surface-2)!important}.mermaid[data-astro-cid-qz3dz2lk] .actor{fill:var(--color-surface)!important;stroke:var(--color-accent)!important}
+</style></head> <body data-astro-cid-37fxchfa> <a class="skip-link" href="#main" data-astro-cid-37fxchfa>Skip to content</a> <div class="reading-progress" id="reading-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Reading progress" aria-hidden="true" data-astro-cid-37fxchfa></div> <div class="page-bg" data-astro-cid-37fxchfa> <div class="card-shell" data-astro-cid-37fxchfa> <div id="scroll-sentinel" style="position:absolute;top:0;height:1px;width:1px;pointer-events:none;" aria-hidden="true" data-astro-cid-37fxchfa></div> <header class="site-header" id="site-header" role="banner" data-astro-cid-3ef6ksr2> <a class="brand" href="/" aria-label="GinkgoQ — home" data-astro-cid-3ef6ksr2> <span class="brand-mark" aria-hidden="true" data-astro-cid-3ef6ksr2> <img class="brand-logo" src="/favicon.svg" alt="GinkgoQ mark" data-astro-cid-3ef6ksr2> </span> <span class="brand-word" aria-label="GINKGOQ"> <span aria-hidden="true">G</span><span aria-hidden="true">I</span><span aria-hidden="true">N</span><span aria-hidden="true">K</span><span aria-hidden="true">G</span><span aria-hidden="true">O</span><span class="brand-q" aria-hidden="true">Q</span> </span> </a> <div class="header-middle" role="presentation" data-astro-cid-3ef6ksr2> <nav class="site-nav" id="site-nav" aria-label="Main navigation" data-astro-cid-3ef6ksr2> <a href="/start-here/" data-astro-cid-3ef6ksr2>Start here</a><a href="/blog/" data-astro-cid-3ef6ksr2>Blog</a><a href="/research-notes/" data-astro-cid-3ef6ksr2>Research Notes</a><a href="/roadmap/" data-astro-cid-3ef6ksr2>Roadmap</a><a href="/about/" data-astro-cid-3ef6ksr2>About</a> </nav> <div class="header-search" id="header-search" role="search" aria-label="Search GinkgoQ" data-astro-cid-3ef6ksr2> <div class="search-inner" data-astro-cid-3ef6ksr2> <label for="search-input" class="sr-only" data-astro-cid-3ef6ksr2>Search posts and notes</label> <div class="search-field" data-astro-cid-3ef6ksr2> <input type="search" id="search-input" class="search-input" placeholder="Search articles and research…" autocomplete="off" autocorrect="off" spellcheck="false" role="combobox" aria-haspopup="listbox" aria-autocomplete="list" aria-controls="search-results-list" aria-expanded="false" data-astro-cid-3ef6ksr2> <button class="search-close-hint" id="btn-search-close" aria-label="Close search" hidden type="button" data-astro-cid-3ef6ksr2>Esc</button> </div> </div> </div> </div> <div class="header-actions" data-astro-cid-3ef6ksr2> <button class="btn-icon btn-theme" id="btn-theme" aria-label="Switch theme" type="button" data-astro-cid-3ef6ksr2> <svg class="icon-sun" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" data-astro-cid-3ef6ksr2> <circle cx="12" cy="12" r="5" data-astro-cid-3ef6ksr2></circle> <line x1="12" y1="1" x2="12" y2="3" data-astro-cid-3ef6ksr2></line> <line x1="12" y1="21" x2="12" y2="23" data-astro-cid-3ef6ksr2></line> <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" data-astro-cid-3ef6ksr2></line> <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" data-astro-cid-3ef6ksr2></line> <line x1="1" y1="12" x2="3" y2="12" data-astro-cid-3ef6ksr2></line> <line x1="21" y1="12" x2="23" y2="12" data-astro-cid-3ef6ksr2></line> <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" data-astro-cid-3ef6ksr2></line> <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" data-astro-cid-3ef6ksr2></line> </svg> <svg class="icon-moon" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" data-astro-cid-3ef6ksr2> <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" data-astro-cid-3ef6ksr2></path> </svg> </button> <button class="search-pill" id="btn-search-open" aria-label="Search (⌘K)" aria-expanded="false" aria-controls="search-results-panel" type="button" data-astro-cid-3ef6ksr2> <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" data-astro-cid-3ef6ksr2> <circle cx="11" cy="11" r="8" data-astro-cid-3ef6ksr2></circle> <line x1="21" y1="21" x2="16.65" y2="16.65" data-astro-cid-3ef6ksr2></line> </svg> <span class="search-pill-label" data-astro-cid-3ef6ksr2>Search</span> <span class="search-kbd-hint" aria-hidden="true" data-astro-cid-3ef6ksr2><kbd data-astro-cid-3ef6ksr2>⌘</kbd><kbd data-astro-cid-3ef6ksr2>K</kbd></span> </button> <a class="btn-icon" href="/rss.xml" aria-label="Subscribe via RSS" title="Subscribe via RSS" data-astro-cid-3ef6ksr2> <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" data-astro-cid-3ef6ksr2> <path d="M4.5 19.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3Z" data-astro-cid-3ef6ksr2></path> <path d="M4.5 12.75c5.623 0 10.185 4.562 10.185 10.185" data-astro-cid-3ef6ksr2></path> <path d="M4.5 6c8.284 0 15 6.716 15 15" data-astro-cid-3ef6ksr2></path> </svg> </a> <button class="btn-icon btn-hamburger" id="btn-hamburger" aria-label="Open navigation" aria-expanded="false" aria-controls="mobile-nav" type="button" data-astro-cid-3ef6ksr2> <svg id="icon-hamburger" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" data-astro-cid-3ef6ksr2> <line x1="3" y1="6" x2="21" y2="6" data-astro-cid-3ef6ksr2></line> <line x1="3" y1="12" x2="21" y2="12" data-astro-cid-3ef6ksr2></line> <line x1="3" y1="18" x2="21" y2="18" data-astro-cid-3ef6ksr2></line> </svg> <svg id="icon-hamburger-close" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true" style="display:none;" data-astro-cid-3ef6ksr2> <line x1="18" y1="6" x2="6" y2="18" data-astro-cid-3ef6ksr2></line> <line x1="6" y1="6" x2="18" y2="18" data-astro-cid-3ef6ksr2></line> </svg> </button> </div> </header> <div class="mobile-nav" id="mobile-nav" role="dialog" aria-modal="true" aria-hidden="true" aria-label="Mobile navigation" data-astro-cid-3ef6ksr2> <div class="mobile-nav-inner" data-astro-cid-3ef6ksr2> <a href="/start-here/" data-astro-cid-3ef6ksr2>Start here</a><a href="/blog/" data-astro-cid-3ef6ksr2>Blog</a><a href="/research-notes/" data-astro-cid-3ef6ksr2>Research Notes</a><a href="/roadmap/" data-astro-cid-3ef6ksr2>Roadmap</a><a href="/about/" data-astro-cid-3ef6ksr2>About</a> </div> </div> <div class="search-results-panel" id="search-results-panel" hidden data-astro-cid-37fxchfa> <div class="search-results-inner" data-astro-cid-37fxchfa> <ul class="search-results-list" id="search-results-list" role="listbox" data-astro-cid-37fxchfa></ul> </div> </div> <main id="main" data-astro-cid-37fxchfa>  <article class="article container" data-astro-cid-gjtny2mx> <div class="article-main" data-astro-cid-gjtny2mx> <a class="back-link" href="/blog/" data-astro-cid-gjtny2mx> <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" data-astro-cid-gjtny2mx><path d="M13 8H3M8 3 3 8l5 5" data-astro-cid-gjtny2mx></path></svg> Blog </a> <header class="article-header" data-astro-cid-gjtny2mx> <span class="eyebrow" data-astro-cid-gjtny2mx>Engineering</span> <h1 data-astro-cid-gjtny2mx>ASHA Hyperparameter Tuning: A Practical Tutorial for Engineers</h1> <p class="dek" data-astro-cid-gjtny2mx>A practical guide to the Asynchronous Successive Halving Algorithm for hyperparameter tuning, with rung schedules, promotion logic, worker behavior, failure modes, and production implementation patterns.</p> <div class="article-meta" data-astro-cid-gjtny2mx> <time datetime="2026-06-04T00:00:00.000Z" data-astro-cid-gjtny2mx>June 4, 2026</time> <span data-astro-cid-gjtny2mx>29 min read</span> <span class="tag-pill" data-astro-cid-gjtny2mx>Hyperparameter Tuning</span><span class="tag-pill" data-astro-cid-gjtny2mx>ASHA</span><span class="tag-pill" data-astro-cid-gjtny2mx>Machine Learning</span> </div> </header> <div class="prose" data-astro-cid-gjtny2mx>  <p>ASHA, the Asynchronous Successive Halving Algorithm, is a scheduler for
+hyperparameter search. It does not invent new hyperparameters. It decides how
+much compute each sampled configuration deserves.</p>
+<p>The core idea is simple:</p>
+<blockquote>
+<p>Start many trials cheaply. Stop weak trials early. Spend most of the budget on
+configurations that look promising.</p>
+</blockquote>
+<p>That sentence is easy to understand and easy to implement badly. A correct ASHA
+implementation must handle delayed metrics, noisy validation curves, worker
+availability, promotion races, failed trials, ties, and the fact that early
+performance is often a biased signal of final performance.</p>
+<p>This tutorial explains ASHA from first principles, then builds an
+implementation-oriented version that is close to what you need in a real tuning
+system.</p>
+<figure class="mermaid-figure" data-astro-cid-qz3dz2lk> <figcaption data-astro-cid-qz3dz2lk>ASHA as a resource allocation loop</figcaption> <pre class="mermaid" data-astro-cid-qz3dz2lk>flowchart LR
+Space[Search space] --&gt; Sample[Sample trial configs]
+Sample --&gt; Workers[Run trials on workers]
+Workers --&gt; Metrics[Report intermediate metrics]
+Metrics --&gt; Rungs[Update rung tables]
+Rungs --&gt; Decision{Promotable?}
+Decision --&gt;|yes| Continue[Continue to next resource]
+Decision --&gt;|no| Stop[Stop trial and free worker]
+Continue --&gt; Workers
+Stop --&gt; Sample
+Rungs --&gt; Final[Select final candidates]
+classDef accent fill:#79863c,color:#fff,stroke:#79863c;
+class Rungs,Decision,Final accent;</pre> </figure> <script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+
+  const isDark = document.documentElement.dataset.theme === "dark";
+  const themeVariables = isDark
+    ? {
+        background: "#14161e",
+        mainBkg: "#1a1d28",
+        secondBkg: "#222638",
+        tertiaryColor: "#202433",
+        primaryColor: "#1a1d28",
+        primaryTextColor: "#eceef8",
+        primaryBorderColor: "#79863c",
+        secondaryColor: "#202433",
+        secondaryTextColor: "#eceef8",
+        secondaryBorderColor: "#2a2f43",
+        clusterBkg: "#14161e",
+        clusterBorder: "#2a2f43",
+        edgeLabelBackground: "#14161e",
+        lineColor: "#79863c",
+        textColor: "#eceef8",
+        nodeTextColor: "#eceef8",
+        fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif",
+      }
+    : {
+        background: "#fafaf8",
+        mainBkg: "#ffffff",
+        secondBkg: "#fafaf8",
+        tertiaryColor: "#f3f3ef",
+        primaryColor: "#ffffff",
+        primaryTextColor: "#101114",
+        primaryBorderColor: "#79863c",
+        secondaryColor: "#fafaf8",
+        secondaryTextColor: "#101114",
+        secondaryBorderColor: "#d8d8cf",
+        clusterBkg: "#fafaf8",
+        clusterBorder: "#d8d8cf",
+        edgeLabelBackground: "#ffffff",
+        lineColor: "#79863c",
+        textColor: "#101114",
+        nodeTextColor: "#101114",
+        fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif",
+      };
+
+  if (!window.__ginkgoqMermaidReady) {
+    window.__ginkgoqMermaidReady = true;
+    mermaid.initialize({
+      startOnLoad: false,
+      securityLevel: "strict",
+      theme: "base",
+      themeVariables,
+    });
+  }
+
+  await mermaid.run({ querySelector: ".mermaid" });
+</script>
+<hr/>
+<h2 id="1-the-problem-asha-solves">1. The Problem ASHA Solves</h2>
+<p>Hyperparameter tuning is a resource allocation problem.</p>
+<p>You usually have:</p>
+<ul>
+<li>a search space: learning rate, weight decay, model size, augmentation strength</li>
+<li>an objective: validation loss, error, reward, latency-adjusted score</li>
+<li>a budget: GPU hours, CPU hours, wall time, money</li>
+<li>many configurations whose quality is unknown before training</li>
+</ul>
+<p>The naive strategies waste compute in different ways.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Method</th><th>What it does</th><th>Main waste</th></tr></thead><tbody><tr><td>Grid search</td><td>Tries a Cartesian product</td><td>Spends budget on unimportant dimensions and bad combinations</td></tr><tr><td>Random search</td><td>Samples independent configurations</td><td>Still trains bad trials too long</td></tr><tr><td>Full training for every trial</td><td>Fair but expensive</td><td>Uses maximum budget before learning anything</td></tr><tr><td>Synchronous Successive Halving</td><td>Trains a cohort, ranks it, promotes the top fraction</td><td>Fast workers wait for slow workers</td></tr></tbody></table>
+<p>ASHA attacks the last two problems:</p>
+<ol>
+<li>Most configurations are bad enough to identify early.</li>
+<li>Synchronous barriers waste wall time when trials run at different speeds.</li>
+</ol>
+<p>ASHA keeps the aggressive early-stopping idea from Successive Halving, but
+removes the synchronization barrier.</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="text"><code><span class="line"><span>Random search:</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>trial A  ============================= full budget</span></span>
+<span class="line"><span>trial B  ============================= full budget</span></span>
+<span class="line"><span>trial C  ============================= full budget</span></span>
+<span class="line"><span>trial D  ============================= full budget</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>ASHA:</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>trial A  ===== stop</span></span>
+<span class="line"><span>trial B  ===== stop</span></span>
+<span class="line"><span>trial C  ===== ===== ===== continue</span></span>
+<span class="line"><span>trial D  ===== stop</span></span>
+<span class="line"><span>trial E  ===== ===== continue</span></span>
+<span class="line"><span>trial F  ===== stop</span></span></code></pre>
+<p>ASHA is useful when partial learning curves are informative enough that early
+rankings correlate with later rankings. They do not need to be perfect. They
+need to be useful more often than random.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Question</th><th>ASHA answer</th></tr></thead><tbody><tr><td>What is being optimized?</td><td>A validation metric, reward, error rate, latency-adjusted score, or another objective reported during training.</td></tr><tr><td>What is being allocated?</td><td>A monotonic resource such as epochs, optimizer steps, tokens, examples, or environment interactions.</td></tr><tr><td>What does ASHA save?</td><td>Wall-clock time and compute by stopping weak configurations before they consume the full budget.</td></tr><tr><td>What can ASHA get wrong?</td><td>It can stop late-blooming configurations when early metrics are noisy or misleading.</td></tr></tbody></table>
+<hr/>
+<h2 id="2-core-intuition">2. Core Intuition</h2>
+<p>Training every trial to completion answers:</p>
+<blockquote>
+<p>Which configuration is best at maximum resource?</p>
+</blockquote>
+<p>ASHA asks a cheaper sequence of questions:</p>
+<blockquote>
+<p>Which configurations are clearly not worth more resource yet?</p>
+</blockquote>
+<p>The distinction matters. ASHA is not trying to prove that a trial is bad. It is
+trying to decide whether a trial is good enough to compete for the next slice of
+compute.</p>
+<p>At each milestone, called a rung, a trial reports a metric. ASHA compares that
+metric against other trials that reached the same rung. Only the top fraction is
+eligible to continue.</p>
+<p>For reduction factor <code>eta</code>, roughly <code>1 / eta</code> of trials survive each rung.</p>
+<p>Example with <code>eta = 3</code>:</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="text"><code><span class="line"><span>Resource per rung:     5 epochs     15 epochs     45 epochs</span></span>
+<span class="line"><span>Expected survivors:    all          top 1/3       top 1/9</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>100 trials start</span></span>
+<span class="line"><span>~33 reach 15 epochs</span></span>
+<span class="line"><span>~11 reach 45 epochs</span></span></code></pre>
+<p>This is the central trade:</p>
+<ul>
+<li>more initial diversity</li>
+<li>less wasted compute on weak trials</li>
+<li>some risk of killing late bloomers</li>
+</ul>
+<p>ASHA is good when early progress is informative and compute is scarce. It is
+dangerous when early metrics are dominated by warmup, noise, or optimizer
+transients.</p>
+<figure class="mermaid-figure" data-astro-cid-qz3dz2lk> <figcaption data-astro-cid-qz3dz2lk>Rung geometry with eta = 3</figcaption> <pre class="mermaid" data-astro-cid-qz3dz2lk>flowchart LR
+Start[100 trials start] --&gt; R0[5 epochs\n100 evaluated]
+R0 --&gt; R1[15 epochs\nabout 33 survive]
+R1 --&gt; R2[45 epochs\nabout 11 survive]
+R2 --&gt; R3[135 epochs\nabout 3 survive]
+R3 --&gt; Winner[Final shortlist]
+classDef accent fill:#79863c,color:#fff,stroke:#79863c;
+class R1,R2,R3,Winner accent;</pre> </figure> <script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+
+  const isDark = document.documentElement.dataset.theme === "dark";
+  const themeVariables = isDark
+    ? {
+        background: "#14161e",
+        mainBkg: "#1a1d28",
+        secondBkg: "#222638",
+        tertiaryColor: "#202433",
+        primaryColor: "#1a1d28",
+        primaryTextColor: "#eceef8",
+        primaryBorderColor: "#79863c",
+        secondaryColor: "#202433",
+        secondaryTextColor: "#eceef8",
+        secondaryBorderColor: "#2a2f43",
+        clusterBkg: "#14161e",
+        clusterBorder: "#2a2f43",
+        edgeLabelBackground: "#14161e",
+        lineColor: "#79863c",
+        textColor: "#eceef8",
+        nodeTextColor: "#eceef8",
+        fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif",
+      }
+    : {
+        background: "#fafaf8",
+        mainBkg: "#ffffff",
+        secondBkg: "#fafaf8",
+        tertiaryColor: "#f3f3ef",
+        primaryColor: "#ffffff",
+        primaryTextColor: "#101114",
+        primaryBorderColor: "#79863c",
+        secondaryColor: "#fafaf8",
+        secondaryTextColor: "#101114",
+        secondaryBorderColor: "#d8d8cf",
+        clusterBkg: "#fafaf8",
+        clusterBorder: "#d8d8cf",
+        edgeLabelBackground: "#ffffff",
+        lineColor: "#79863c",
+        textColor: "#101114",
+        nodeTextColor: "#101114",
+        fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif",
+      };
+
+  if (!window.__ginkgoqMermaidReady) {
+    window.__ginkgoqMermaidReady = true;
+    mermaid.initialize({
+      startOnLoad: false,
+      securityLevel: "strict",
+      theme: "base",
+      themeVariables,
+    });
+  }
+
+  await mermaid.run({ querySelector: ".mermaid" });
+</script>
+<hr/>
+<h2 id="3-vocabulary">3. Vocabulary</h2>
+<h3 id="trial">Trial</h3>
+<p>A trial is one sampled hyperparameter configuration plus its training state.</p>
+<p>Example:</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="json"><code><span class="line"><span style="color:#E1E4E8">{</span></span>
+<span class="line"><span style="color:#79B8FF">  &quot;trial_id&quot;</span><span style="color:#E1E4E8">: </span><span style="color:#79B8FF">17</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#79B8FF">  &quot;lr&quot;</span><span style="color:#E1E4E8">: </span><span style="color:#79B8FF">0.0007</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#79B8FF">  &quot;weight_decay&quot;</span><span style="color:#E1E4E8">: </span><span style="color:#79B8FF">0.0003</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#79B8FF">  &quot;hidden_size&quot;</span><span style="color:#E1E4E8">: </span><span style="color:#79B8FF">200</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#79B8FF">  &quot;status&quot;</span><span style="color:#E1E4E8">: </span><span style="color:#9ECBFF">&quot;running&quot;</span></span>
+<span class="line"><span style="color:#E1E4E8">}</span></span></code></pre>
+<p>ASHA does not care how the configuration was sampled. It can come from random
+search, Bayesian optimization, a hand-written grid, or a domain-specific
+generator.</p>
+<h3 id="resource">Resource</h3>
+<p>Resource is the unit ASHA allocates.</p>
+<p>Common choices:</p>
+<ul>
+<li>epochs</li>
+<li>training steps</li>
+<li>environment interactions</li>
+<li>processed tokens</li>
+<li>processed examples</li>
+<li>wall-clock seconds</li>
+</ul>
+<p>Use a resource that is monotonic and comparable across trials.</p>
+<p>For neural networks, epochs are convenient but often imperfect. If datasets,
+batch sizes, or sequence lengths differ between trials, training steps or
+examples processed may be fairer.</p>
+<h3 id="rung">Rung</h3>
+<p>A rung is a resource milestone.</p>
+<p>With:</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="text"><code><span class="line"><span>grace_period = 5</span></span>
+<span class="line"><span>reduction_factor = 3</span></span>
+<span class="line"><span>max_t = 45</span></span></code></pre>
+<p>the rungs are:</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="text"><code><span class="line"><span>5, 15, 45</span></span></code></pre>
+<p>Each rung stores the metric values of trials that reached that milestone.</p>
+<h3 id="promotion">Promotion</h3>
+<p>Promotion means the trial is allowed to continue beyond the current rung.</p>
+<p>In many implementations, promotion is not an explicit queue. A running trial
+reaches a rung, reports a metric, and the scheduler decides:</p>
+<ul>
+<li>continue</li>
+<li>pause</li>
+<li>stop</li>
+</ul>
+<p>ASHA usually stops weak trials instead of pausing them.</p>
+<h3 id="reduction-factor">Reduction Factor</h3>
+<p>The reduction factor <code>eta</code> controls how aggressively ASHA prunes trials.</p>
+<p>At each rung, only approximately the top <code>1 / eta</code> fraction survives.</p>
+<p>Common values:</p>
+<ul>
+<li><code>eta = 2</code>: conservative, keeps more trials alive</li>
+<li><code>eta = 3</code>: common default</li>
+<li><code>eta = 4</code>: aggressive, useful when early metrics are reliable</li>
+</ul>
+<h3 id="grace-period">Grace Period</h3>
+<p>The grace period is the minimum resource any trial receives before it can be
+stopped.</p>
+<p>It protects trials from being killed before the metric is meaningful.</p>
+<p>Bad grace period:</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="text"><code><span class="line"><span>epoch 1 metric:</span></span>
+<span class="line"><span>trial A: terrible because LR warmup just started</span></span>
+<span class="line"><span>trial B: good because it overfits early</span></span></code></pre>
+<p>Good grace period:</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="text"><code><span class="line"><span>first decision happens after warmup and at least one stable validation signal</span></span></code></pre>
+<h3 id="max-resource">Max Resource</h3>
+<p><code>max_t</code> is the maximum resource ASHA gives to any trial.</p>
+<p>It should match the budget at which you actually care about model quality. If
+you will train the final model for 200 epochs, but ASHA only compares trials at
+30 epochs, you are optimizing the wrong objective unless rankings stabilize
+early.</p>
+<h3 id="bracket">Bracket</h3>
+<p>Classic Hyperband uses multiple brackets. Each bracket uses a different
+starting budget and halving schedule.</p>
+<p>ASHA is often used as one asynchronous bracket, or as the asynchronous scheduler
+inside Hyperband-style multi-bracket search.</p>
+<p>Single-bracket ASHA is simpler and often works well. Multi-bracket ASHA is more
+robust when you are uncertain about how much resource early decisions require.</p>
+<hr/>
+<h2 id="4-successive-halving-before-asha">4. Successive Halving Before ASHA</h2>
+<p>Classic Successive Halving is easier to understand.</p>
+<p>Given <code>n</code> trials:</p>
+<ol>
+<li>Train all trials for <code>r</code> resource.</li>
+<li>Rank by validation metric.</li>
+<li>Keep the top <code>1 / eta</code>.</li>
+<li>Increase resource by <code>eta</code>.</li>
+<li>Repeat until max resource.</li>
+</ol>
+<p>Pseudocode:</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="python"><code><span class="line"><span style="color:#E1E4E8">trials </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> sample_trials(n)</span></span>
+<span class="line"><span style="color:#E1E4E8">resource </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> grace_period</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">while</span><span style="color:#E1E4E8"> resource </span><span style="color:#F97583">&lt;=</span><span style="color:#E1E4E8"> max_t:</span></span>
+<span class="line"><span style="color:#F97583">    for</span><span style="color:#E1E4E8"> trial </span><span style="color:#F97583">in</span><span style="color:#E1E4E8"> trials:</span></span>
+<span class="line"><span style="color:#E1E4E8">        train_until(trial, resource)</span></span>
+<span class="line"><span style="color:#E1E4E8">        trial.metric </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> validate(trial)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E1E4E8">    trials </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> top_fraction(trials, </span><span style="color:#FFAB70">fraction</span><span style="color:#F97583">=</span><span style="color:#79B8FF">1</span><span style="color:#F97583"> /</span><span style="color:#E1E4E8"> eta)</span></span>
+<span class="line"><span style="color:#E1E4E8">    resource </span><span style="color:#F97583">*=</span><span style="color:#E1E4E8"> eta</span></span></code></pre>
+<p>The problem is the barrier:</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="text"><code><span class="line"><span>rung 0:</span></span>
+<span class="line"><span>fast trial     ===== done, waits</span></span>
+<span class="line"><span>medium trial   ========= done, waits</span></span>
+<span class="line"><span>slow trial     ================= done</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>promotion cannot happen until everyone reaches the barrier</span></span></code></pre>
+<p>If one trial is slow because it sampled a larger model or hit a noisy worker,
+all other trials wait. This wastes wall time.</p>
+<p>ASHA removes that wait.</p>
+<figure class="mermaid-figure" data-astro-cid-qz3dz2lk> <figcaption data-astro-cid-qz3dz2lk>Synchronous halving waits; ASHA reacts</figcaption> <pre class="mermaid" data-astro-cid-qz3dz2lk>flowchart TB
+subgraph SH[Successive Halving]
+  SH1[Fast trial reaches rung] --&gt; SH2[Wait for cohort]
+  SH3[Slow trial reaches rung] --&gt; SH2
+  SH2 --&gt; SH4[Rank cohort and promote]
+end
+subgraph AS[ASHA]
+  A1[Trial reports metric] --&gt; A2[Update rung table]
+  A2 --&gt; A3{Top fraction?}
+  A3 --&gt;|yes| A4[Continue]
+  A3 --&gt;|no| A5[Stop and reuse worker]
+end
+classDef accent fill:#79863c,color:#fff,stroke:#79863c;
+class SH4,A2,A3,A4 accent;</pre> </figure> <script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+
+  const isDark = document.documentElement.dataset.theme === "dark";
+  const themeVariables = isDark
+    ? {
+        background: "#14161e",
+        mainBkg: "#1a1d28",
+        secondBkg: "#222638",
+        tertiaryColor: "#202433",
+        primaryColor: "#1a1d28",
+        primaryTextColor: "#eceef8",
+        primaryBorderColor: "#79863c",
+        secondaryColor: "#202433",
+        secondaryTextColor: "#eceef8",
+        secondaryBorderColor: "#2a2f43",
+        clusterBkg: "#14161e",
+        clusterBorder: "#2a2f43",
+        edgeLabelBackground: "#14161e",
+        lineColor: "#79863c",
+        textColor: "#eceef8",
+        nodeTextColor: "#eceef8",
+        fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif",
+      }
+    : {
+        background: "#fafaf8",
+        mainBkg: "#ffffff",
+        secondBkg: "#fafaf8",
+        tertiaryColor: "#f3f3ef",
+        primaryColor: "#ffffff",
+        primaryTextColor: "#101114",
+        primaryBorderColor: "#79863c",
+        secondaryColor: "#fafaf8",
+        secondaryTextColor: "#101114",
+        secondaryBorderColor: "#d8d8cf",
+        clusterBkg: "#fafaf8",
+        clusterBorder: "#d8d8cf",
+        edgeLabelBackground: "#ffffff",
+        lineColor: "#79863c",
+        textColor: "#101114",
+        nodeTextColor: "#101114",
+        fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif",
+      };
+
+  if (!window.__ginkgoqMermaidReady) {
+    window.__ginkgoqMermaidReady = true;
+    mermaid.initialize({
+      startOnLoad: false,
+      securityLevel: "strict",
+      theme: "base",
+      themeVariables,
+    });
+  }
+
+  await mermaid.run({ querySelector: ".mermaid" });
+</script>
+<hr/>
+<h2 id="5-asha-step-by-step">5. ASHA Step by Step</h2>
+<p>ASHA keeps rungs, but decisions happen whenever a trial reports.</p>
+<figure class="mermaid-figure" data-astro-cid-qz3dz2lk> <figcaption data-astro-cid-qz3dz2lk>ASHA decision flow</figcaption> <pre class="mermaid" data-astro-cid-qz3dz2lk>flowchart TD
+A[Start or resume trial] --&gt; B[Train until next rung]
+B --&gt; C[Report metric]
+C --&gt; D{Reached max_t?}
+D --&gt;|yes| E[Complete trial]
+D --&gt;|no| F{Metric in top 1 / eta at this rung?}
+F --&gt;|yes| G[Continue to next rung]
+F --&gt;|no| H[Stop trial]
+G --&gt; B
+classDef accent fill:#79863c,color:#fff,stroke:#79863c;
+class C,D,F,G accent;</pre> </figure> <script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+
+  const isDark = document.documentElement.dataset.theme === "dark";
+  const themeVariables = isDark
+    ? {
+        background: "#14161e",
+        mainBkg: "#1a1d28",
+        secondBkg: "#222638",
+        tertiaryColor: "#202433",
+        primaryColor: "#1a1d28",
+        primaryTextColor: "#eceef8",
+        primaryBorderColor: "#79863c",
+        secondaryColor: "#202433",
+        secondaryTextColor: "#eceef8",
+        secondaryBorderColor: "#2a2f43",
+        clusterBkg: "#14161e",
+        clusterBorder: "#2a2f43",
+        edgeLabelBackground: "#14161e",
+        lineColor: "#79863c",
+        textColor: "#eceef8",
+        nodeTextColor: "#eceef8",
+        fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif",
+      }
+    : {
+        background: "#fafaf8",
+        mainBkg: "#ffffff",
+        secondBkg: "#fafaf8",
+        tertiaryColor: "#f3f3ef",
+        primaryColor: "#ffffff",
+        primaryTextColor: "#101114",
+        primaryBorderColor: "#79863c",
+        secondaryColor: "#fafaf8",
+        secondaryTextColor: "#101114",
+        secondaryBorderColor: "#d8d8cf",
+        clusterBkg: "#fafaf8",
+        clusterBorder: "#d8d8cf",
+        edgeLabelBackground: "#ffffff",
+        lineColor: "#79863c",
+        textColor: "#101114",
+        nodeTextColor: "#101114",
+        fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif",
+      };
+
+  if (!window.__ginkgoqMermaidReady) {
+    window.__ginkgoqMermaidReady = true;
+    mermaid.initialize({
+      startOnLoad: false,
+      securityLevel: "strict",
+      theme: "base",
+      themeVariables,
+    });
+  }
+
+  await mermaid.run({ querySelector: ".mermaid" });
+</script>
+<p>The scheduler does not wait for all trials in a cohort. It only uses the data
+available in each rung table at decision time.</p>
+<h3 id="rung-table">Rung Table</h3>
+<p>A rung table might look like this:</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="text"><code><span class="line"><span>rung resource = 5 epochs</span></span>
+<span class="line"><span>mode = minimize</span></span>
+<span class="line"><span>eta = 3</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>trial   metric    decision</span></span>
+<span class="line"><span>-----   ------    --------</span></span>
+<span class="line"><span>T03     0.91      stop</span></span>
+<span class="line"><span>T07     0.64      promote</span></span>
+<span class="line"><span>T11     0.73      promote</span></span>
+<span class="line"><span>T14     1.20      stop</span></span>
+<span class="line"><span>T18     0.67      promote</span></span>
+<span class="line"><span>T22     0.88      stop</span></span></code></pre>
+<p>For <code>eta = 3</code>, the top third are promotable. With six completed trials at the
+rung, roughly two survive. Real implementations need to define whether they use
+floor, ceil, or at-least-one promotion.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th style="text-align:right">Rung resource</th><th style="text-align:right">Records collected</th><th style="text-align:right">Keep rule with <code>eta = 3</code></th><th>Expected action</th></tr></thead><tbody><tr><td style="text-align:right">5 epochs</td><td style="text-align:right">27 trials</td><td style="text-align:right"><code>floor(27 / 3) = 9</code></td><td>Stop the weakest 18 trials</td></tr><tr><td style="text-align:right">15 epochs</td><td style="text-align:right">9 trials</td><td style="text-align:right"><code>floor(9 / 3) = 3</code></td><td>Continue the strongest 3 trials</td></tr><tr><td style="text-align:right">45 epochs</td><td style="text-align:right">3 trials</td><td style="text-align:right"><code>floor(3 / 3) = 1</code></td><td>Fully evaluate the best candidate</td></tr></tbody></table>
+<hr/>
+<h2 id="6-core-decision-logic">6. Core Decision Logic</h2>
+<p>For a rung with <code>m</code> reported trials and reduction factor <code>eta</code>, the number of
+promotable trials is commonly:</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="text"><code><span class="line"><span>k = floor(m / eta)</span></span></code></pre>
+<p>with a guard:</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="text"><code><span class="line"><span>k = max(1, floor(m / eta))</span></span></code></pre>
+<p>For minimization:</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="python"><code><span class="line"><span style="color:#E1E4E8">promotable </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> metric </span><span style="color:#F97583">&lt;=</span><span style="color:#E1E4E8"> kth_best_metric</span></span></code></pre>
+<p>For maximization:</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="python"><code><span class="line"><span style="color:#E1E4E8">promotable </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> metric </span><span style="color:#F97583">&gt;=</span><span style="color:#E1E4E8"> kth_best_metric</span></span></code></pre>
+<p>The decision is local to a rung. A trial that looks good at 5 epochs must still
+earn promotion at 15 epochs.</p>
+<h3 id="practical-detail-minimum-population-per-rung">Practical Detail: Minimum Population Per Rung</h3>
+<p>If you allow promotion when only one trial has reached a rung, the first trial
+always promotes. That can over-reward fast trials.</p>
+<p>Many implementations add a minimum population check:</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="python"><code><span class="line"><span style="color:#F97583">if</span><span style="color:#79B8FF"> len</span><span style="color:#E1E4E8">(rung.records) </span><span style="color:#F97583">&lt;</span><span style="color:#E1E4E8"> eta:</span></span>
+<span class="line"><span style="color:#F97583">    return</span><span style="color:#79B8FF"> CONTINUE</span></span></code></pre>
+<p>or:</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="python"><code><span class="line"><span style="color:#F97583">if</span><span style="color:#79B8FF"> len</span><span style="color:#E1E4E8">(rung.records) </span><span style="color:#F97583">&lt;</span><span style="color:#E1E4E8"> min_trials_for_decision:</span></span>
+<span class="line"><span style="color:#F97583">    return</span><span style="color:#79B8FF"> PAUSE_OR_CONTINUE</span></span></code></pre>
+<p>There is no free answer:</p>
+<ul>
+<li>deciding early maximizes throughput</li>
+<li>waiting improves ranking quality</li>
+<li>pausing requires checkpointing</li>
+<li>continuing weak trials wastes compute</li>
+</ul>
+<p>For simple systems, continue until enough data exists, then apply pruning at
+later reports. For large clusters, pause-and-promote can be more efficient.</p>
+<hr/>
+<h2 id="7-asha-vs-hyperband">7. ASHA vs Hyperband</h2>
+<p>Hyperband asks:</p>
+<blockquote>
+<p>How much should we trust early stopping for this problem?</p>
+</blockquote>
+<p>It runs multiple Successive Halving schedules, called brackets.</p>
+<p>Some brackets start many trials with tiny budgets. Other brackets start fewer
+trials with larger budgets. This hedges against late bloomers.</p>
+<p>ASHA asks:</p>
+<blockquote>
+<p>How do we remove synchronization barriers from halving?</p>
+</blockquote>
+<p>ASHA can be used inside a single bracket or inside Hyperband brackets.</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="text"><code><span class="line"><span>Successive Halving:</span></span>
+<span class="line"><span>    synchronous halving within one schedule</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>Hyperband:</span></span>
+<span class="line"><span>    multiple synchronous halving schedules</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>ASHA:</span></span>
+<span class="line"><span>    asynchronous halving, usually one or more schedules</span></span></code></pre>
+<p>In practice:</p>
+<ul>
+<li>use single-bracket ASHA when you know a reasonable grace period</li>
+<li>use Hyperband-style multi-bracket ASHA when you are unsure how early to judge</li>
+</ul>
+<hr/>
+<h2 id="8-building-asha-from-scratch">8. Building ASHA From Scratch</h2>
+<p>This implementation is intentionally small, but it includes the pieces that
+matter in real systems:</p>
+<ul>
+<li>trial state</li>
+<li>rung state</li>
+<li>metric ordering</li>
+<li>promotion decisions</li>
+<li>failed trial handling</li>
+<li>delayed reports</li>
+<li>deterministic ties</li>
+</ul>
+<h3 id="data-structures">Data Structures</h3>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="python"><code><span class="line"><span style="color:#F97583">from</span><span style="color:#79B8FF"> __future__</span><span style="color:#F97583"> import</span><span style="color:#E1E4E8"> annotations</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">from</span><span style="color:#E1E4E8"> dataclasses </span><span style="color:#F97583">import</span><span style="color:#E1E4E8"> dataclass, field</span></span>
+<span class="line"><span style="color:#F97583">from</span><span style="color:#E1E4E8"> enum </span><span style="color:#F97583">import</span><span style="color:#E1E4E8"> Enum</span></span>
+<span class="line"><span style="color:#F97583">from</span><span style="color:#E1E4E8"> math </span><span style="color:#F97583">import</span><span style="color:#E1E4E8"> floor</span></span>
+<span class="line"><span style="color:#F97583">from</span><span style="color:#E1E4E8"> typing </span><span style="color:#F97583">import</span><span style="color:#E1E4E8"> Dict, List, Optional</span></span>
+<span class="line"></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">class</span><span style="color:#B392F0"> Mode</span><span style="color:#E1E4E8">(</span><span style="color:#79B8FF">str</span><span style="color:#E1E4E8">, </span><span style="color:#B392F0">Enum</span><span style="color:#E1E4E8">):</span></span>
+<span class="line"><span style="color:#79B8FF">    MIN</span><span style="color:#F97583"> =</span><span style="color:#9ECBFF"> &quot;min&quot;</span></span>
+<span class="line"><span style="color:#79B8FF">    MAX</span><span style="color:#F97583"> =</span><span style="color:#9ECBFF"> &quot;max&quot;</span></span>
+<span class="line"></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">class</span><span style="color:#B392F0"> Decision</span><span style="color:#E1E4E8">(</span><span style="color:#79B8FF">str</span><span style="color:#E1E4E8">, </span><span style="color:#B392F0">Enum</span><span style="color:#E1E4E8">):</span></span>
+<span class="line"><span style="color:#79B8FF">    CONTINUE</span><span style="color:#F97583"> =</span><span style="color:#9ECBFF"> &quot;continue&quot;</span></span>
+<span class="line"><span style="color:#79B8FF">    STOP</span><span style="color:#F97583"> =</span><span style="color:#9ECBFF"> &quot;stop&quot;</span></span>
+<span class="line"><span style="color:#79B8FF">    COMPLETE</span><span style="color:#F97583"> =</span><span style="color:#9ECBFF"> &quot;complete&quot;</span></span>
+<span class="line"></span>
+<span class="line"></span>
+<span class="line"><span style="color:#B392F0">@dataclass</span></span>
+<span class="line"><span style="color:#F97583">class</span><span style="color:#B392F0"> TrialState</span><span style="color:#E1E4E8">:</span></span>
+<span class="line"><span style="color:#E1E4E8">    trial_id: </span><span style="color:#79B8FF">str</span></span>
+<span class="line"><span style="color:#E1E4E8">    config: </span><span style="color:#79B8FF">dict</span></span>
+<span class="line"><span style="color:#E1E4E8">    resource: </span><span style="color:#79B8FF">int</span><span style="color:#F97583"> =</span><span style="color:#79B8FF"> 0</span></span>
+<span class="line"><span style="color:#E1E4E8">    status: </span><span style="color:#79B8FF">str</span><span style="color:#F97583"> =</span><span style="color:#9ECBFF"> &quot;running&quot;</span></span>
+<span class="line"><span style="color:#E1E4E8">    last_metric: Optional[</span><span style="color:#79B8FF">float</span><span style="color:#E1E4E8">] </span><span style="color:#F97583">=</span><span style="color:#79B8FF"> None</span></span>
+<span class="line"><span style="color:#E1E4E8">    last_rung: </span><span style="color:#79B8FF">int</span><span style="color:#F97583"> =</span><span style="color:#F97583"> -</span><span style="color:#79B8FF">1</span></span>
+<span class="line"></span>
+<span class="line"></span>
+<span class="line"><span style="color:#B392F0">@dataclass</span><span style="color:#E1E4E8">(</span><span style="color:#FFAB70">frozen</span><span style="color:#F97583">=</span><span style="color:#79B8FF">True</span><span style="color:#E1E4E8">)</span></span>
+<span class="line"><span style="color:#F97583">class</span><span style="color:#B392F0"> RungRecord</span><span style="color:#E1E4E8">:</span></span>
+<span class="line"><span style="color:#E1E4E8">    trial_id: </span><span style="color:#79B8FF">str</span></span>
+<span class="line"><span style="color:#E1E4E8">    metric: </span><span style="color:#79B8FF">float</span></span>
+<span class="line"><span style="color:#E1E4E8">    resource: </span><span style="color:#79B8FF">int</span></span>
+<span class="line"><span style="color:#E1E4E8">    order: </span><span style="color:#79B8FF">int</span></span>
+<span class="line"></span>
+<span class="line"></span>
+<span class="line"><span style="color:#B392F0">@dataclass</span></span>
+<span class="line"><span style="color:#F97583">class</span><span style="color:#B392F0"> Rung</span><span style="color:#E1E4E8">:</span></span>
+<span class="line"><span style="color:#E1E4E8">    level: </span><span style="color:#79B8FF">int</span></span>
+<span class="line"><span style="color:#E1E4E8">    resource: </span><span style="color:#79B8FF">int</span></span>
+<span class="line"><span style="color:#E1E4E8">    records: Dict[</span><span style="color:#79B8FF">str</span><span style="color:#E1E4E8">, RungRecord] </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> field(</span><span style="color:#FFAB70">default_factory</span><span style="color:#F97583">=</span><span style="color:#79B8FF">dict</span><span style="color:#E1E4E8">)</span></span></code></pre>
+<p>Why a dictionary for rung records?</p>
+<p>Because delayed metrics happen. A trial might report the same rung twice due to
+retry logic, logging duplication, or worker restarts. A dictionary lets you
+replace or ignore duplicates intentionally.</p>
+<h3 id="scheduler-initialization">Scheduler Initialization</h3>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="python"><code><span class="line"><span style="color:#F97583">class</span><span style="color:#B392F0"> ASHAScheduler</span><span style="color:#E1E4E8">:</span></span>
+<span class="line"><span style="color:#F97583">    def</span><span style="color:#79B8FF"> __init__</span><span style="color:#E1E4E8">(</span></span>
+<span class="line"><span style="color:#E1E4E8">        self,</span></span>
+<span class="line"><span style="color:#F97583">        *</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#E1E4E8">        max_t: </span><span style="color:#79B8FF">int</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#E1E4E8">        grace_period: </span><span style="color:#79B8FF">int</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#E1E4E8">        reduction_factor: </span><span style="color:#79B8FF">int</span><span style="color:#F97583"> =</span><span style="color:#79B8FF"> 3</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#E1E4E8">        mode: Mode </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> Mode.</span><span style="color:#79B8FF">MIN</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#E1E4E8">        min_trials_per_rung: Optional[</span><span style="color:#79B8FF">int</span><span style="color:#E1E4E8">] </span><span style="color:#F97583">=</span><span style="color:#79B8FF"> None</span><span style="color:#E1E4E8">,</span></span>
+<span class="line"><span style="color:#E1E4E8">    ):</span></span>
+<span class="line"><span style="color:#F97583">        if</span><span style="color:#E1E4E8"> max_t </span><span style="color:#F97583">&lt;</span><span style="color:#E1E4E8"> grace_period:</span></span>
+<span class="line"><span style="color:#F97583">            raise</span><span style="color:#79B8FF"> ValueError</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">&quot;max_t must be &gt;= grace_period&quot;</span><span style="color:#E1E4E8">)</span></span>
+<span class="line"><span style="color:#F97583">        if</span><span style="color:#E1E4E8"> reduction_factor </span><span style="color:#F97583">&lt;</span><span style="color:#79B8FF"> 2</span><span style="color:#E1E4E8">:</span></span>
+<span class="line"><span style="color:#F97583">            raise</span><span style="color:#79B8FF"> ValueError</span><span style="color:#E1E4E8">(</span><span style="color:#9ECBFF">&quot;reduction_factor must be &gt;= 2&quot;</span><span style="color:#E1E4E8">)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#79B8FF">        self</span><span style="color:#E1E4E8">.max_t </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> max_t</span></span>
+<span class="line"><span style="color:#79B8FF">        self</span><span style="color:#E1E4E8">.grace_period </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> grace_period</span></span>
+<span class="line"><span style="color:#79B8FF">        self</span><span style="color:#E1E4E8">.eta </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> reduction_factor</span></span>
+<span class="line"><span style="color:#79B8FF">        self</span><span style="color:#E1E4E8">.mode </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> mode</span></span>
+<span class="line"><span style="color:#79B8FF">        self</span><span style="color:#E1E4E8">.min_trials_per_rung </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> min_trials_per_rung </span><span style="color:#F97583">or</span><span style="color:#E1E4E8"> reduction_factor</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#79B8FF">        self</span><span style="color:#E1E4E8">.rungs </span><span style="color:#F97583">=</span><span style="color:#79B8FF"> self</span><span style="color:#E1E4E8">._build_rungs()</span></span>
+<span class="line"><span style="color:#79B8FF">        self</span><span style="color:#E1E4E8">.trials: Dict[</span><span style="color:#79B8FF">str</span><span style="color:#E1E4E8">, TrialState] </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> {}</span></span>
+<span class="line"><span style="color:#79B8FF">        self</span><span style="color:#E1E4E8">._report_order </span><span style="color:#F97583">=</span><span style="color:#79B8FF"> 0</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">    def</span><span style="color:#B392F0"> _build_rungs</span><span style="color:#E1E4E8">(self) -&gt; List[Rung]:</span></span>
+<span class="line"><span style="color:#E1E4E8">        rungs </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> []</span></span>
+<span class="line"><span style="color:#E1E4E8">        r </span><span style="color:#F97583">=</span><span style="color:#79B8FF"> self</span><span style="color:#E1E4E8">.grace_period</span></span>
+<span class="line"><span style="color:#E1E4E8">        level </span><span style="color:#F97583">=</span><span style="color:#79B8FF"> 0</span></span>
+<span class="line"><span style="color:#F97583">        while</span><span style="color:#E1E4E8"> r </span><span style="color:#F97583">&lt;</span><span style="color:#79B8FF"> self</span><span style="color:#E1E4E8">.max_t:</span></span>
+<span class="line"><span style="color:#E1E4E8">            rungs.append(Rung(</span><span style="color:#FFAB70">level</span><span style="color:#F97583">=</span><span style="color:#E1E4E8">level, </span><span style="color:#FFAB70">resource</span><span style="color:#F97583">=</span><span style="color:#E1E4E8">r))</span></span>
+<span class="line"><span style="color:#E1E4E8">            r </span><span style="color:#F97583">*=</span><span style="color:#79B8FF"> self</span><span style="color:#E1E4E8">.eta</span></span>
+<span class="line"><span style="color:#E1E4E8">            level </span><span style="color:#F97583">+=</span><span style="color:#79B8FF"> 1</span></span>
+<span class="line"><span style="color:#E1E4E8">        rungs.append(Rung(</span><span style="color:#FFAB70">level</span><span style="color:#F97583">=</span><span style="color:#E1E4E8">level, </span><span style="color:#FFAB70">resource</span><span style="color:#F97583">=</span><span style="color:#79B8FF">self</span><span style="color:#E1E4E8">.max_t))</span></span>
+<span class="line"><span style="color:#F97583">        return</span><span style="color:#E1E4E8"> rungs</span></span></code></pre>
+<p>The rung resources are geometric:</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="text"><code><span class="line"><span>r_i = min(max_t, grace_period * eta^i)</span></span></code></pre>
+<h3 id="registering-trials">Registering Trials</h3>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="python"><code><span class="line"><span style="color:#F97583">    def</span><span style="color:#B392F0"> add_trial</span><span style="color:#E1E4E8">(self, trial_id: </span><span style="color:#79B8FF">str</span><span style="color:#E1E4E8">, config: </span><span style="color:#79B8FF">dict</span><span style="color:#E1E4E8">) -&gt; </span><span style="color:#79B8FF">None</span><span style="color:#E1E4E8">:</span></span>
+<span class="line"><span style="color:#F97583">        if</span><span style="color:#E1E4E8"> trial_id </span><span style="color:#F97583">in</span><span style="color:#79B8FF"> self</span><span style="color:#E1E4E8">.trials:</span></span>
+<span class="line"><span style="color:#F97583">            raise</span><span style="color:#79B8FF"> ValueError</span><span style="color:#E1E4E8">(</span><span style="color:#F97583">f</span><span style="color:#9ECBFF">&quot;duplicate trial_id: </span><span style="color:#79B8FF">{</span><span style="color:#E1E4E8">trial_id</span><span style="color:#79B8FF">}</span><span style="color:#9ECBFF">&quot;</span><span style="color:#E1E4E8">)</span></span>
+<span class="line"><span style="color:#79B8FF">        self</span><span style="color:#E1E4E8">.trials[trial_id] </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> TrialState(</span><span style="color:#FFAB70">trial_id</span><span style="color:#F97583">=</span><span style="color:#E1E4E8">trial_id, </span><span style="color:#FFAB70">config</span><span style="color:#F97583">=</span><span style="color:#E1E4E8">config)</span></span></code></pre>
+<p>Keep trial registration separate from reporting. It makes failures and retries
+cleaner.</p>
+<h3 id="finding-the-current-rung">Finding the Current Rung</h3>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="python"><code><span class="line"><span style="color:#F97583">    def</span><span style="color:#B392F0"> _rung_for_resource</span><span style="color:#E1E4E8">(self, resource: </span><span style="color:#79B8FF">int</span><span style="color:#E1E4E8">) -&gt; Optional[Rung]:</span></span>
+<span class="line"><span style="color:#F97583">        for</span><span style="color:#E1E4E8"> rung </span><span style="color:#F97583">in</span><span style="color:#79B8FF"> self</span><span style="color:#E1E4E8">.rungs:</span></span>
+<span class="line"><span style="color:#F97583">            if</span><span style="color:#E1E4E8"> resource </span><span style="color:#F97583">&gt;=</span><span style="color:#E1E4E8"> rung.resource:</span></span>
+<span class="line"><span style="color:#F97583">                continue</span></span>
+<span class="line"><span style="color:#F97583">            return</span><span style="color:#E1E4E8"> rung</span></span>
+<span class="line"><span style="color:#F97583">        return</span><span style="color:#79B8FF"> None</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">    def</span><span style="color:#B392F0"> _reached_rungs</span><span style="color:#E1E4E8">(self, previous: </span><span style="color:#79B8FF">int</span><span style="color:#E1E4E8">, current: </span><span style="color:#79B8FF">int</span><span style="color:#E1E4E8">) -&gt; List[Rung]:</span></span>
+<span class="line"><span style="color:#F97583">        return</span><span style="color:#E1E4E8"> [</span></span>
+<span class="line"><span style="color:#E1E4E8">            rung </span><span style="color:#F97583">for</span><span style="color:#E1E4E8"> rung </span><span style="color:#F97583">in</span><span style="color:#79B8FF"> self</span><span style="color:#E1E4E8">.rungs</span></span>
+<span class="line"><span style="color:#F97583">            if</span><span style="color:#E1E4E8"> previous </span><span style="color:#F97583">&lt;</span><span style="color:#E1E4E8"> rung.resource </span><span style="color:#F97583">&lt;=</span><span style="color:#E1E4E8"> current</span></span>
+<span class="line"><span style="color:#E1E4E8">        ]</span></span></code></pre>
+<p>A trial can jump over multiple rungs if it reports late. Do not assume every
+report lands exactly on a rung.</p>
+<p>Example:</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="text"><code><span class="line"><span>worker reports at epoch 18</span></span>
+<span class="line"><span>rungs are 5, 15, 45</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>The scheduler must process rung 5 and rung 15 decisions.</span></span></code></pre>
+<p>In many training systems, workers report every epoch. In distributed systems,
+reports can be delayed, batched, or lost.</p>
+<h3 id="ranking-a-rung">Ranking a Rung</h3>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="python"><code><span class="line"><span style="color:#F97583">    def</span><span style="color:#B392F0"> _sorted_records</span><span style="color:#E1E4E8">(self, rung: Rung) -&gt; List[RungRecord]:</span></span>
+<span class="line"><span style="color:#E1E4E8">        reverse </span><span style="color:#F97583">=</span><span style="color:#79B8FF"> self</span><span style="color:#E1E4E8">.mode </span><span style="color:#F97583">==</span><span style="color:#E1E4E8"> Mode.</span><span style="color:#79B8FF">MAX</span></span>
+<span class="line"><span style="color:#F97583">        return</span><span style="color:#79B8FF"> sorted</span><span style="color:#E1E4E8">(</span></span>
+<span class="line"><span style="color:#E1E4E8">            rung.records.values(),</span></span>
+<span class="line"><span style="color:#FFAB70">            key</span><span style="color:#F97583">=lambda</span><span style="color:#E1E4E8"> r: (r.metric, </span><span style="color:#F97583">-</span><span style="color:#E1E4E8">r.order) </span><span style="color:#F97583">if</span><span style="color:#F97583"> not</span><span style="color:#E1E4E8"> reverse </span><span style="color:#F97583">else</span><span style="color:#E1E4E8"> (</span><span style="color:#F97583">-</span><span style="color:#E1E4E8">r.metric, </span><span style="color:#F97583">-</span><span style="color:#E1E4E8">r.order),</span></span>
+<span class="line"><span style="color:#E1E4E8">        )</span></span></code></pre>
+<p>Tie-breaking must be deterministic. Here, earlier reports win ties because
+<code>order</code> increases over time and we sort by <code>-order</code> after metric direction is
+handled. You could also use trial ID. The important part is to choose one rule.</p>
+<h3 id="promotion-logic">Promotion Logic</h3>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="python"><code><span class="line"><span style="color:#F97583">    def</span><span style="color:#B392F0"> _is_promotable</span><span style="color:#E1E4E8">(self, rung: Rung, trial_id: </span><span style="color:#79B8FF">str</span><span style="color:#E1E4E8">) -&gt; </span><span style="color:#79B8FF">bool</span><span style="color:#E1E4E8">:</span></span>
+<span class="line"><span style="color:#E1E4E8">        records </span><span style="color:#F97583">=</span><span style="color:#79B8FF"> self</span><span style="color:#E1E4E8">._sorted_records(rung)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">        if</span><span style="color:#79B8FF"> len</span><span style="color:#E1E4E8">(records) </span><span style="color:#F97583">&lt;</span><span style="color:#79B8FF"> self</span><span style="color:#E1E4E8">.min_trials_per_rung:</span></span>
+<span class="line"><span style="color:#F97583">            return</span><span style="color:#79B8FF"> True</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E1E4E8">        keep </span><span style="color:#F97583">=</span><span style="color:#79B8FF"> max</span><span style="color:#E1E4E8">(</span><span style="color:#79B8FF">1</span><span style="color:#E1E4E8">, floor(</span><span style="color:#79B8FF">len</span><span style="color:#E1E4E8">(records) </span><span style="color:#F97583">/</span><span style="color:#79B8FF"> self</span><span style="color:#E1E4E8">.eta))</span></span>
+<span class="line"><span style="color:#E1E4E8">        keep_ids </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> {r.trial_id </span><span style="color:#F97583">for</span><span style="color:#E1E4E8"> r </span><span style="color:#F97583">in</span><span style="color:#E1E4E8"> records[:keep]}</span></span>
+<span class="line"><span style="color:#F97583">        return</span><span style="color:#E1E4E8"> trial_id </span><span style="color:#F97583">in</span><span style="color:#E1E4E8"> keep_ids</span></span></code></pre>
+<p>This version allows trials to continue until enough peers have reached the rung.
+That is simple and avoids checkpointing. The cost is that some trials may train
+past the rung before enough comparison data exists.</p>
+<p>If compute is extremely expensive, use pause-and-promote instead.</p>
+<h3 id="reporting-metrics">Reporting Metrics</h3>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="python"><code><span class="line"><span style="color:#F97583">    def</span><span style="color:#B392F0"> on_result</span><span style="color:#E1E4E8">(self, trial_id: </span><span style="color:#79B8FF">str</span><span style="color:#E1E4E8">, resource: </span><span style="color:#79B8FF">int</span><span style="color:#E1E4E8">, metric: </span><span style="color:#79B8FF">float</span><span style="color:#E1E4E8">) -&gt; Decision:</span></span>
+<span class="line"><span style="color:#E1E4E8">        trial </span><span style="color:#F97583">=</span><span style="color:#79B8FF"> self</span><span style="color:#E1E4E8">.trials[trial_id]</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">        if</span><span style="color:#E1E4E8"> trial.status </span><span style="color:#F97583">in</span><span style="color:#E1E4E8"> {</span><span style="color:#9ECBFF">&quot;stopped&quot;</span><span style="color:#E1E4E8">, </span><span style="color:#9ECBFF">&quot;completed&quot;</span><span style="color:#E1E4E8">, </span><span style="color:#9ECBFF">&quot;failed&quot;</span><span style="color:#E1E4E8">}:</span></span>
+<span class="line"><span style="color:#F97583">            return</span><span style="color:#E1E4E8"> Decision.</span><span style="color:#79B8FF">STOP</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">        if</span><span style="color:#E1E4E8"> resource </span><span style="color:#F97583">&lt;</span><span style="color:#E1E4E8"> trial.resource:</span></span>
+<span class="line"><span style="color:#6A737D">            # Stale metric. Ignore it.</span></span>
+<span class="line"><span style="color:#F97583">            return</span><span style="color:#E1E4E8"> Decision.</span><span style="color:#79B8FF">CONTINUE</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E1E4E8">        reached </span><span style="color:#F97583">=</span><span style="color:#79B8FF"> self</span><span style="color:#E1E4E8">._reached_rungs(trial.resource, resource)</span></span>
+<span class="line"><span style="color:#E1E4E8">        trial.resource </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> resource</span></span>
+<span class="line"><span style="color:#E1E4E8">        trial.last_metric </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> metric</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">        if</span><span style="color:#F97583"> not</span><span style="color:#E1E4E8"> reached:</span></span>
+<span class="line"><span style="color:#F97583">            return</span><span style="color:#E1E4E8"> Decision.</span><span style="color:#79B8FF">CONTINUE</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">        for</span><span style="color:#E1E4E8"> rung </span><span style="color:#F97583">in</span><span style="color:#E1E4E8"> reached:</span></span>
+<span class="line"><span style="color:#79B8FF">            self</span><span style="color:#E1E4E8">._report_order </span><span style="color:#F97583">+=</span><span style="color:#79B8FF"> 1</span></span>
+<span class="line"><span style="color:#E1E4E8">            rung.records[trial_id] </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> RungRecord(</span></span>
+<span class="line"><span style="color:#FFAB70">                trial_id</span><span style="color:#F97583">=</span><span style="color:#E1E4E8">trial_id,</span></span>
+<span class="line"><span style="color:#FFAB70">                metric</span><span style="color:#F97583">=</span><span style="color:#E1E4E8">metric,</span></span>
+<span class="line"><span style="color:#FFAB70">                resource</span><span style="color:#F97583">=</span><span style="color:#E1E4E8">rung.resource,</span></span>
+<span class="line"><span style="color:#FFAB70">                order</span><span style="color:#F97583">=</span><span style="color:#79B8FF">self</span><span style="color:#E1E4E8">._report_order,</span></span>
+<span class="line"><span style="color:#E1E4E8">            )</span></span>
+<span class="line"><span style="color:#E1E4E8">            trial.last_rung </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> rung.level</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">            if</span><span style="color:#E1E4E8"> rung.resource </span><span style="color:#F97583">&gt;=</span><span style="color:#79B8FF"> self</span><span style="color:#E1E4E8">.max_t:</span></span>
+<span class="line"><span style="color:#E1E4E8">                trial.status </span><span style="color:#F97583">=</span><span style="color:#9ECBFF"> &quot;completed&quot;</span></span>
+<span class="line"><span style="color:#F97583">                return</span><span style="color:#E1E4E8"> Decision.</span><span style="color:#79B8FF">COMPLETE</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">            if</span><span style="color:#F97583"> not</span><span style="color:#79B8FF"> self</span><span style="color:#E1E4E8">._is_promotable(rung, trial_id):</span></span>
+<span class="line"><span style="color:#E1E4E8">                trial.status </span><span style="color:#F97583">=</span><span style="color:#9ECBFF"> &quot;stopped&quot;</span></span>
+<span class="line"><span style="color:#F97583">                return</span><span style="color:#E1E4E8"> Decision.</span><span style="color:#79B8FF">STOP</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">        return</span><span style="color:#E1E4E8"> Decision.</span><span style="color:#79B8FF">CONTINUE</span></span></code></pre>
+<p>This is the heart of ASHA.</p>
+<p>The subtle part is processing all reached rungs. A delayed report at resource
+18 must not skip the decision that should have happened at resource 5.</p>
+<h3 id="failed-trials">Failed Trials</h3>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="python"><code><span class="line"><span style="color:#F97583">    def</span><span style="color:#B392F0"> on_trial_error</span><span style="color:#E1E4E8">(self, trial_id: </span><span style="color:#79B8FF">str</span><span style="color:#E1E4E8">, reason: </span><span style="color:#79B8FF">str</span><span style="color:#F97583"> =</span><span style="color:#9ECBFF"> &quot;&quot;</span><span style="color:#E1E4E8">) -&gt; </span><span style="color:#79B8FF">None</span><span style="color:#E1E4E8">:</span></span>
+<span class="line"><span style="color:#E1E4E8">        trial </span><span style="color:#F97583">=</span><span style="color:#79B8FF"> self</span><span style="color:#E1E4E8">.trials[trial_id]</span></span>
+<span class="line"><span style="color:#E1E4E8">        trial.status </span><span style="color:#F97583">=</span><span style="color:#9ECBFF"> &quot;failed&quot;</span></span>
+<span class="line"><span style="color:#E1E4E8">        trial.error </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> reason</span></span></code></pre>
+<p>Do not insert failed trials into rung rankings with artificial bad metrics unless
+you have a reason. Treating failures as metrics can distort promotion thresholds.</p>
+<p>Record them separately:</p>
+<ul>
+<li>bad configuration</li>
+<li>infrastructure failure</li>
+<li>out of memory</li>
+<li>NaN loss</li>
+<li>timeout</li>
+</ul>
+<p>Those categories mean different things.</p>
+<hr/>
+<h2 id="9-scheduler-behavior-with-workers">9. Scheduler Behavior With Workers</h2>
+<p>ASHA is not just a ranking rule. It is a worker scheduler.</p>
+<p>At runtime, you need a loop like this:</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="python"><code><span class="line"><span style="color:#F97583">while</span><span style="color:#E1E4E8"> budget_remaining:</span></span>
+<span class="line"><span style="color:#E1E4E8">    event </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> wait_for_worker_event()</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">    if</span><span style="color:#E1E4E8"> event.type </span><span style="color:#F97583">==</span><span style="color:#9ECBFF"> &quot;result&quot;</span><span style="color:#E1E4E8">:</span></span>
+<span class="line"><span style="color:#E1E4E8">        decision </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> scheduler.on_result(</span></span>
+<span class="line"><span style="color:#E1E4E8">            event.trial_id,</span></span>
+<span class="line"><span style="color:#FFAB70">            resource</span><span style="color:#F97583">=</span><span style="color:#E1E4E8">event.epoch,</span></span>
+<span class="line"><span style="color:#FFAB70">            metric</span><span style="color:#F97583">=</span><span style="color:#E1E4E8">event.val_loss,</span></span>
+<span class="line"><span style="color:#E1E4E8">        )</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">        if</span><span style="color:#E1E4E8"> decision </span><span style="color:#F97583">==</span><span style="color:#E1E4E8"> Decision.</span><span style="color:#79B8FF">STOP</span><span style="color:#E1E4E8">:</span></span>
+<span class="line"><span style="color:#E1E4E8">            stop_worker(event.trial_id)</span></span>
+<span class="line"><span style="color:#E1E4E8">            launch_new_trial_if_worker_free()</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">        elif</span><span style="color:#E1E4E8"> decision </span><span style="color:#F97583">==</span><span style="color:#E1E4E8"> Decision.</span><span style="color:#79B8FF">COMPLETE</span><span style="color:#E1E4E8">:</span></span>
+<span class="line"><span style="color:#E1E4E8">            mark_complete(event.trial_id)</span></span>
+<span class="line"><span style="color:#E1E4E8">            launch_new_trial_if_worker_free()</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">        else</span><span style="color:#E1E4E8">:</span></span>
+<span class="line"><span style="color:#E1E4E8">            continue_training(event.trial_id)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">    elif</span><span style="color:#E1E4E8"> event.type </span><span style="color:#F97583">==</span><span style="color:#9ECBFF"> &quot;failed&quot;</span><span style="color:#E1E4E8">:</span></span>
+<span class="line"><span style="color:#E1E4E8">        scheduler.on_trial_error(event.trial_id, event.reason)</span></span>
+<span class="line"><span style="color:#E1E4E8">        launch_new_trial_if_worker_free()</span></span></code></pre>
+<p>Two practical choices dominate behavior:</p>
+<ol>
+<li>Do workers train continuously and get stopped only at rung reports?</li>
+<li>Or do workers pause at rungs and wait for promotion?</li>
+</ol>
+<h3 id="stop-based-asha">Stop-Based ASHA</h3>
+<p>This is common and simple.</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="text"><code><span class="line"><span>trial trains continuously</span></span>
+<span class="line"><span>if bad at rung: stop</span></span>
+<span class="line"><span>if good at rung: continue</span></span></code></pre>
+<p>Pros:</p>
+<ul>
+<li>no checkpoint/resume complexity</li>
+<li>good worker utilization</li>
+<li>easy to implement</li>
+</ul>
+<p>Cons:</p>
+<ul>
+<li>fast trials can run beyond a rung before enough peers exist</li>
+<li>some compute is spent on trials that would later be stopped</li>
+</ul>
+<h3 id="pause-and-promote-asha">Pause-and-Promote ASHA</h3>
+<p>Trials stop at rung boundaries and wait in a promotion queue.</p>
+<p>Pros:</p>
+<ul>
+<li>less wasted compute past rung thresholds</li>
+<li>fairer comparison</li>
+<li>useful when individual trials are expensive</li>
+</ul>
+<p>Cons:</p>
+<ul>
+<li>requires checkpointing</li>
+<li>can leave workers idle</li>
+<li>more scheduling complexity</li>
+<li>more storage pressure</li>
+</ul>
+<p>For many deep learning workloads, stop-based ASHA is the better first
+implementation.</p>
+<hr/>
+<h2 id="10-why-these-design-choices-exist">10. Why These Design Choices Exist</h2>
+<h3 id="rungs-are-geometric">Rungs Are Geometric</h3>
+<p>Geometric spacing gives increasingly strong evidence at each stage.</p>
+<p>If rungs are linear:</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="text"><code><span class="line"><span>5, 10, 15, 20, 25</span></span></code></pre>
+<p>then ASHA makes many decisions from similar evidence. You add overhead without
+learning much more.</p>
+<p>If rungs are geometric:</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="text"><code><span class="line"><span>5, 15, 45, 135</span></span></code></pre>
+<p>each decision asks whether the trial still deserves a much larger budget.</p>
+<h3 id="promotion-uses-rank-not-absolute-metric">Promotion Uses Rank, Not Absolute Metric</h3>
+<p>Absolute thresholds are brittle.</p>
+<p>Bad:</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="python"><code><span class="line"><span style="color:#F97583">if</span><span style="color:#E1E4E8"> val_loss </span><span style="color:#F97583">&gt;</span><span style="color:#79B8FF"> 0.2</span><span style="color:#E1E4E8">:</span></span>
+<span class="line"><span style="color:#E1E4E8">    stop()</span></span></code></pre>
+<p>This fails when:</p>
+<ul>
+<li>the dataset changes</li>
+<li>the metric scale changes</li>
+<li>early metrics are naturally high</li>
+<li>the model class changes</li>
+</ul>
+<p>ASHA uses relative rank within a rung:</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="python"><code><span class="line"><span style="color:#E1E4E8">keep top </span><span style="color:#79B8FF">1</span><span style="color:#F97583"> /</span><span style="color:#E1E4E8"> eta</span></span></code></pre>
+<p>This makes it portable across tasks.</p>
+<h3 id="a-grace-period-is-mandatory">A Grace Period Is Mandatory</h3>
+<p>Without a grace period, ASHA becomes “kill based on startup noise.”</p>
+<p>Common sources of early metric instability:</p>
+<ul>
+<li>LR warmup</li>
+<li>batch norm statistics</li>
+<li>optimizer bias correction</li>
+<li>data augmentation variance</li>
+<li>random initialization variance</li>
+<li>curriculum effects</li>
+<li>models with slow representation learning</li>
+</ul>
+<p>The grace period should begin after the first metric that has some predictive
+value.</p>
+<h3 id="deterministic-tie-handling-is-not-optional">Deterministic Tie Handling Is Not Optional</h3>
+<p>At scale, ties happen:</p>
+<ul>
+<li>metrics rounded in logs</li>
+<li>classification accuracy with small validation sets</li>
+<li>failed metrics converted to sentinel values</li>
+<li>repeated scores in early epochs</li>
+</ul>
+<p>If tie handling depends on dictionary iteration order, experiments become hard
+to reproduce.</p>
+<h3 id="failed-trials-should-not-pollute-rungs">Failed Trials Should Not Pollute Rungs</h3>
+<p>Out-of-memory is not the same as high validation loss.</p>
+<p>If a trial fails because the model is too large, you may want the search
+algorithm to learn from that separately. But ASHA itself should not treat that
+as a normal metric unless your objective explicitly includes feasibility.</p>
+<hr/>
+<h2 id="11-handling-noisy-objectives">11. Handling Noisy Objectives</h2>
+<p>ASHA assumes early rankings are informative. Noise weakens that assumption.</p>
+<p>Symptoms:</p>
+<ul>
+<li>top trials at early rungs frequently collapse later</li>
+<li>stopped trials look good when rerun</li>
+<li>rankings change dramatically between adjacent validation calls</li>
+<li>aggressive pruning hurts compared with random search</li>
+</ul>
+<p>Useful mitigations:</p>
+<h3 id="increase-grace-period">Increase Grace Period</h3>
+<p>If the first useful signal appears after 20 epochs, do not make the first rung
+at 3 epochs.</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="text"><code><span class="line"><span>bad:  grace_period = 1</span></span>
+<span class="line"><span>good: grace_period = end of warmup + at least one stable validation</span></span></code></pre>
+<h3 id="reduce-pruning-aggressiveness">Reduce Pruning Aggressiveness</h3>
+<p>Use smaller <code>eta</code>.</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="text"><code><span class="line"><span>eta = 2  keeps half</span></span>
+<span class="line"><span>eta = 3  keeps one third</span></span>
+<span class="line"><span>eta = 4  keeps one quarter</span></span></code></pre>
+<p>For noisy objectives, <code>eta = 2</code> is often worth the extra compute.</p>
+<h3 id="smooth-metrics">Smooth Metrics</h3>
+<p>If validation is cheap, report a smoothed metric:</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="python"><code><span class="line"><span style="color:#E1E4E8">score </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> median(last_3_validation_losses)</span></span></code></pre>
+<p>Avoid smoothing across too many points. ASHA needs current quality, not a
+historical artifact.</p>
+<h3 id="use-repeated-seeds-for-finalists">Use Repeated Seeds for Finalists</h3>
+<p>Do not trust the single best ASHA trial blindly when noise is high.</p>
+<p>Common pattern:</p>
+<ol>
+<li>Use ASHA to find a shortlist.</li>
+<li>Retrain top <code>k</code> configurations with multiple seeds.</li>
+<li>Select based on mean or median final metric.</li>
+</ol>
+<h3 id="promote-based-on-conservative-scores">Promote Based on Conservative Scores</h3>
+<p>For stochastic metrics, rank by a confidence-adjusted score.</p>
+<p>Example for minimization:</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="text"><code><span class="line"><span>score = mean_loss + c * std_loss</span></span></code></pre>
+<p>This penalizes unstable configurations.</p>
+<hr/>
+<h2 id="12-late-bloomers">12. Late Bloomers</h2>
+<p>A late bloomer is a configuration that looks weak early but strong later.</p>
+<p>Examples:</p>
+<ul>
+<li>low learning rate with long training</li>
+<li>strong regularization</li>
+<li>larger models</li>
+<li>heavy augmentation</li>
+<li>delayed curriculum</li>
+<li>methods with long warmup</li>
+</ul>
+<p>ASHA can kill these too early.</p>
+<p>Mitigations:</p>
+<ul>
+<li>increase grace period</li>
+<li>use multi-bracket Hyperband-style ASHA</li>
+<li>compare configurations at equivalent scheduler phases</li>
+<li>avoid searching LR schedules that have incompatible warmup lengths</li>
+<li>use resource as optimizer steps rather than epochs when batch sizes differ</li>
+<li>reserve a small fraction of budget for random full-length trials</li>
+</ul>
+<p>One practical trick:</p>
+<blockquote>
+<p>Keep ASHA aggressive for cheap model families, but run a conservative bracket
+for configurations known to learn slowly.</p>
+</blockquote>
+<p>Do not pretend one schedule is fair for every model class.</p>
+<hr/>
+<h2 id="13-choosing-parameters">13. Choosing Parameters</h2>
+<h3 id="max_t"><code>max_t</code></h3>
+<p>Choose <code>max_t</code> based on the horizon you care about.</p>
+<p>Good:</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="text"><code><span class="line"><span>final training is 100 epochs</span></span>
+<span class="line"><span>ASHA max_t is 100 or close enough that ranking is stable</span></span></code></pre>
+<p>Risky:</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="text"><code><span class="line"><span>final training is 300 epochs</span></span>
+<span class="line"><span>ASHA max_t is 30 epochs</span></span></code></pre>
+<p>That is only valid if 30-epoch rankings predict 300-epoch rankings.</p>
+<h3 id="grace_period"><code>grace_period</code></h3>
+<p>Use domain knowledge.</p>
+<p>Rules of thumb:</p>
+<ul>
+<li>at least the end of LR warmup</li>
+<li>at least one full validation pass</li>
+<li>long enough for loss to leave the initialization regime</li>
+<li>longer for heavy augmentation or small validation sets</li>
+</ul>
+<p>For deep learning:</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="text"><code><span class="line"><span>grace_period = 5 to 10 epochs</span></span></code></pre>
+<p>is a common starting range, but the right value is task-specific.</p>
+<h3 id="reduction_factor"><code>reduction_factor</code></h3>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th style="text-align:right"><code>eta</code></th><th>Behavior</th><th>Use when</th></tr></thead><tbody><tr><td style="text-align:right">2</td><td>Conservative</td><td>noisy metrics, late bloomers, expensive mistakes</td></tr><tr><td style="text-align:right">3</td><td>Balanced</td><td>default for many workloads</td></tr><tr><td style="text-align:right">4 or higher</td><td>Aggressive</td><td>early metrics are highly predictive</td></tr></tbody></table>
+<h3 id="parameter-cheat-sheet">Parameter Cheat Sheet</h3>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Parameter</th><th>What it controls</th><th>Practical default</th><th>Watch for</th></tr></thead><tbody><tr><td><code>max_t</code></td><td>Maximum resource any trial receives</td><td>Final training horizon or a validated proxy</td><td>Too small means you optimize early performance, not final quality</td></tr><tr><td><code>grace_period</code></td><td>Minimum resource before pruning</td><td>End of warmup plus one stable validation signal</td><td>Too short kills warmup-sensitive configurations</td></tr><tr><td><code>reduction_factor</code> / <code>eta</code></td><td>Fraction of trials kept at each rung</td><td><code>3</code> for balanced pruning</td><td>Higher values are aggressive and amplify early noise</td></tr><tr><td><code>metric</code></td><td>Score used for ranking</td><td>Validation loss, accuracy, reward, or task-specific score</td><td>Must be comparable across trials at the same rung</td></tr><tr><td><code>mode</code></td><td>Whether lower or higher is better</td><td><code>min</code> for loss, <code>max</code> for accuracy/reward</td><td>A wrong mode silently selects bad configurations</td></tr><tr><td><code>time_attr</code> / resource</td><td>Unit ASHA allocates</td><td>Steps, epochs, tokens, or examples processed</td><td>Epochs can be unfair when batch size or data volume varies</td></tr></tbody></table>
+<h3 id="number-of-initial-trials">Number of Initial Trials</h3>
+<p>ASHA needs enough trials to make rung rankings meaningful.</p>
+<p>If <code>eta = 3</code> and only 4 trials reach a rung, promotion decisions are noisy.</p>
+<p>A useful minimum:</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="text"><code><span class="line"><span>initial_trials &gt;= eta^num_rungs</span></span></code></pre>
+<p>Example:</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="text"><code><span class="line"><span>rungs = 5, 15, 45</span></span>
+<span class="line"><span>eta = 3</span></span>
+<span class="line"><span>eta^3 = 27</span></span></code></pre>
+<p>This does not mean you always need 27 trials. It means fewer trials make the
+later rungs statistically thin.</p>
+<hr/>
+<h2 id="14-comparison-with-other-tuning-methods">14. Comparison With Other Tuning Methods</h2>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Method</th><th>Main strength</th><th>Main weakness</th><th>Best use</th></tr></thead><tbody><tr><td>Grid Search</td><td>Simple and reproducible</td><td>Explodes with dimensions, wastes budget</td><td>Very small structured spaces</td></tr><tr><td>Random Search</td><td>Strong baseline, easy to parallelize</td><td>Does not allocate budget adaptively</td><td>Cheap trials or unknown spaces</td></tr><tr><td>Successive Halving</td><td>Efficient early stopping</td><td>Synchronous barriers</td><td>Homogeneous trial durations</td></tr><tr><td>ASHA</td><td>Efficient and asynchronous</td><td>Can kill late bloomers</td><td>Parallel tuning with variable trial times</td></tr><tr><td>Hyperband</td><td>Robust to unknown early-stopping horizon</td><td>More moving parts</td><td>When grace period is uncertain</td></tr><tr><td>Bayesian Optimization</td><td>Sample-efficient in small expensive spaces</td><td>Harder with many conditional/discrete dimensions, less parallel by default</td><td>Expensive black-box objectives</td></tr><tr><td>PBT</td><td>Adapts hyperparameters during training</td><td>More complex, mutates trials, harder to analyze</td><td>Long training with schedules that matter</td></tr></tbody></table>
+<p>ASHA and Bayesian Optimization are not mutually exclusive.</p>
+<p>Common hybrid:</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="text"><code><span class="line"><span>Bayesian optimizer proposes configurations</span></span>
+<span class="line"><span>ASHA decides how much resource each configuration receives</span></span></code></pre>
+<p>This is useful when the search space is expensive and early stopping is valid.</p>
+<hr/>
+<h2 id="15-common-implementation-bugs">15. Common Implementation Bugs</h2>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Failure mode</th><th>What it looks like</th><th>Engineering fix</th></tr></thead><tbody><tr><td>Fast-trial bias</td><td>The first trials to reach rungs are repeatedly promoted</td><td>Require a minimum rung population or use pause-and-promote</td></tr><tr><td>Cross-resource comparison</td><td>A 5-epoch metric is compared with a 45-epoch metric</td><td>Store one ranking table per rung resource</td></tr><tr><td>Wrong metric direction</td><td>The scheduler keeps high loss or low accuracy</td><td>Make <code>mode</code> explicit and test it</td></tr><tr><td>Delayed reports skip rungs</td><td>A worker reports at epoch 18 and bypasses epoch 5 and 15 decisions</td><td>Process every rung crossed since the previous report</td></tr><tr><td>Failed trials pollute ranking</td><td>OOM or timeout is treated as ordinary validation loss</td><td>Track failure categories separately from metric records</td></tr><tr><td>Resource is not comparable</td><td>Large-batch and small-batch trials get unequal optimization progress</td><td>Use optimizer steps or examples processed</td></tr></tbody></table>
+<h3 id="bug-promoting-the-first-trial-at-every-rung">Bug: Promoting the First Trial at Every Rung</h3>
+<p>If the first trial to reach a rung always promotes, fast configurations get an
+unfair advantage.</p>
+<p>Fix:</p>
+<ul>
+<li>require a minimum number of records before pruning</li>
+<li>or use pause-and-promote</li>
+</ul>
+<h3 id="bug-comparing-metrics-across-different-resources">Bug: Comparing Metrics Across Different Resources</h3>
+<p>Do not compare a 5-epoch metric with a 45-epoch metric.</p>
+<p>Each rung has its own table.</p>
+<h3 id="bug-wrong-metric-direction">Bug: Wrong Metric Direction</h3>
+<p>Accuracy is maximized. Loss is minimized.</p>
+<p>This mistake silently inverts the search.</p>
+<p>Add a test:</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="python"><code><span class="line"><span style="color:#F97583">assert</span><span style="color:#E1E4E8"> scheduler.is_better(</span><span style="color:#79B8FF">0.1</span><span style="color:#E1E4E8">, </span><span style="color:#79B8FF">0.2</span><span style="color:#E1E4E8">)  </span><span style="color:#6A737D"># for loss</span></span></code></pre>
+<h3 id="bug-rung-skipping-from-delayed-reports">Bug: Rung Skipping From Delayed Reports</h3>
+<p>A trial reports at epoch 18 and you only register epoch 18. It skipped the 5 and
+15 epoch decisions.</p>
+<p>Fix:</p>
+<ul>
+<li>process all rungs crossed since the last report</li>
+</ul>
+<h3 id="bug-no-deterministic-tie-break">Bug: No Deterministic Tie Break</h3>
+<p>If tie order is nondeterministic, reruns become confusing.</p>
+<p>Fix:</p>
+<ul>
+<li>tie break by report order or trial ID</li>
+</ul>
+<h3 id="bug-failed-trials-treated-as-normal-metrics">Bug: Failed Trials Treated as Normal Metrics</h3>
+<p>Out-of-memory should not be ranked beside validation loss.</p>
+<p>Fix:</p>
+<ul>
+<li>track failure categories separately</li>
+</ul>
+<h3 id="bug-resource-is-not-comparable">Bug: Resource Is Not Comparable</h3>
+<p>If one trial uses batch size 8 and another uses batch size 128, “epoch” may not
+mean comparable optimization progress.</p>
+<p>Fix:</p>
+<ul>
+<li>use optimizer steps or examples processed</li>
+<li>or constrain batch size during ASHA</li>
+</ul>
+<h3 id="bug-validation-is-too-sparse">Bug: Validation Is Too Sparse</h3>
+<p>If trials report only after training for a long time, ASHA cannot stop them
+early.</p>
+<p>Fix:</p>
+<ul>
+<li>align validation/report intervals with rung resources</li>
+</ul>
+<hr/>
+<h2 id="16-debugging-asha">16. Debugging ASHA</h2>
+<p>Print the rung tables.</p>
+<p>For every rung:</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="text"><code><span class="line"><span>rung  resource  n_records  cutoff_metric  promoted  stopped</span></span>
+<span class="line"><span>0     5         27         0.84           9         18</span></span>
+<span class="line"><span>1     15        9          0.61           3         6</span></span>
+<span class="line"><span>2     45        3          0.52           1         2</span></span></code></pre>
+<p>If those numbers do not match the intended <code>eta</code>, inspect the promotion logic.</p>
+<figure class="mermaid-figure" data-astro-cid-qz3dz2lk> <figcaption data-astro-cid-qz3dz2lk>Debugging path for a bad ASHA run</figcaption> <pre class="mermaid" data-astro-cid-qz3dz2lk>flowchart TD
+Bad[ASHA underperforms random search] --&gt; Curves{Are early curves predictive?}
+Curves --&gt;|no| Grace[Increase grace period or use Hyperband brackets]
+Curves --&gt;|yes| Rungs{Do rung counts match eta?}
+Rungs --&gt;|no| Logic[Inspect promotion and delayed-report logic]
+Rungs --&gt;|yes| Metric{Is metric direction correct?}
+Metric --&gt;|no| Mode[Fix mode and add tests]
+Metric --&gt;|yes| Space{Is resource comparable?}
+Space --&gt;|no| Resource[Use steps, tokens, or examples processed]
+Space --&gt;|yes| Baseline[Retrain finalists with seeds and compare budget fairly]
+classDef accent fill:#79863c,color:#fff,stroke:#79863c;
+class Bad,Rungs,Metric,Baseline accent;</pre> </figure> <script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+
+  const isDark = document.documentElement.dataset.theme === "dark";
+  const themeVariables = isDark
+    ? {
+        background: "#14161e",
+        mainBkg: "#1a1d28",
+        secondBkg: "#222638",
+        tertiaryColor: "#202433",
+        primaryColor: "#1a1d28",
+        primaryTextColor: "#eceef8",
+        primaryBorderColor: "#79863c",
+        secondaryColor: "#202433",
+        secondaryTextColor: "#eceef8",
+        secondaryBorderColor: "#2a2f43",
+        clusterBkg: "#14161e",
+        clusterBorder: "#2a2f43",
+        edgeLabelBackground: "#14161e",
+        lineColor: "#79863c",
+        textColor: "#eceef8",
+        nodeTextColor: "#eceef8",
+        fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif",
+      }
+    : {
+        background: "#fafaf8",
+        mainBkg: "#ffffff",
+        secondBkg: "#fafaf8",
+        tertiaryColor: "#f3f3ef",
+        primaryColor: "#ffffff",
+        primaryTextColor: "#101114",
+        primaryBorderColor: "#79863c",
+        secondaryColor: "#fafaf8",
+        secondaryTextColor: "#101114",
+        secondaryBorderColor: "#d8d8cf",
+        clusterBkg: "#fafaf8",
+        clusterBorder: "#d8d8cf",
+        edgeLabelBackground: "#ffffff",
+        lineColor: "#79863c",
+        textColor: "#101114",
+        nodeTextColor: "#101114",
+        fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif",
+      };
+
+  if (!window.__ginkgoqMermaidReady) {
+    window.__ginkgoqMermaidReady = true;
+    mermaid.initialize({
+      startOnLoad: false,
+      securityLevel: "strict",
+      theme: "base",
+      themeVariables,
+    });
+  }
+
+  await mermaid.run({ querySelector: ".mermaid" });
+</script>
+<h3 id="checks-worth-automating">Checks Worth Automating</h3>
+<ul>
+<li>Every trial receives at least <code>grace_period</code>.</li>
+<li>No trial exceeds <code>max_t</code>.</li>
+<li>Every rung stores metrics only from that resource level.</li>
+<li>Promotion count is approximately <code>floor(n / eta)</code>.</li>
+<li>Failed trials are counted separately.</li>
+<li>Metric direction is tested.</li>
+<li>Delayed reports do not skip rungs.</li>
+<li>The final selected config exists in the saved trial records.</li>
+</ul>
+<h3 id="plot-survival-curves">Plot Survival Curves</h3>
+<p>Plot how many trials remain after each rung.</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="text"><code><span class="line"><span>trials alive</span></span>
+<span class="line"><span>100 |************</span></span>
+<span class="line"><span> 33 |****</span></span>
+<span class="line"><span> 11 |*</span></span>
+<span class="line"><span>  3 |*</span></span>
+<span class="line"><span>    +----------------</span></span>
+<span class="line"><span>      5   15   45  135 epochs</span></span></code></pre>
+<p>If almost everything dies at the first rung, the grace period may be too short
+or <code>eta</code> too aggressive.</p>
+<p>If almost nothing dies, ASHA is not saving compute.</p>
+<h3 id="compare-against-random-search">Compare Against Random Search</h3>
+<p>Always run a random-search baseline with the same total budget.</p>
+<p>ASHA should beat random search in wall-clock efficiency. If it does not:</p>
+<ul>
+<li>early metrics may be uninformative</li>
+<li>rung placement may be wrong</li>
+<li>pruning may be too aggressive</li>
+<li>the search space may be poorly designed</li>
+</ul>
+<hr/>
+<h2 id="17-engineering-notes-for-real-systems">17. Engineering Notes for Real Systems</h2>
+<h3 id="checkpointing">Checkpointing</h3>
+<p>Stop-based ASHA can avoid checkpointing except for final candidates.</p>
+<p>Pause-and-promote ASHA requires checkpointing at every rung.</p>
+<p>Checkpoint contents:</p>
+<ul>
+<li>model weights</li>
+<li>optimizer state</li>
+<li>scheduler state</li>
+<li>random states</li>
+<li>dataloader epoch/state if deterministic replay matters</li>
+<li>trial config</li>
+<li>current resource</li>
+</ul>
+<h3 id="worker-utilization">Worker Utilization</h3>
+<p>ASHA works best when workers are always busy.</p>
+<p>If workers are idle:</p>
+<ul>
+<li>launch more initial trials</li>
+<li>reduce pause behavior</li>
+<li>increase search-space sampling speed</li>
+<li>avoid validation bottlenecks</li>
+<li>use asynchronous result handling</li>
+</ul>
+<h3 id="trial-duration-variance">Trial Duration Variance</h3>
+<p>ASHA handles uneven durations better than synchronous halving, but it does not
+remove all bias.</p>
+<p>Fast trials produce earlier rung records. If promotion happens with too few
+records, speed becomes part of the objective.</p>
+<p>If that is undesirable, use:</p>
+<ul>
+<li>minimum records per rung</li>
+<li>pause-and-promote</li>
+<li>separate brackets by model size</li>
+</ul>
+<h3 id="search-space-design">Search Space Design</h3>
+<p>ASHA cannot fix a bad search space.</p>
+<p>Bad spaces:</p>
+<ul>
+<li>learning rates spanning absurd ranges</li>
+<li>invalid model configurations</li>
+<li>batch sizes that change resource meaning</li>
+<li>augmentation ranges that destroy labels</li>
+<li>conditional parameters sampled independently</li>
+</ul>
+<p>Good spaces:</p>
+<ul>
+<li>encode known constraints</li>
+<li>sample log-scale parameters logarithmically</li>
+<li>keep resource comparable across trials</li>
+<li>separate architecture search from optimizer search when needed</li>
+</ul>
+<hr/>
+<h2 id="18-a-more-realistic-scheduler-skeleton">18. A More Realistic Scheduler Skeleton</h2>
+<p>Below is a compact event-driven skeleton. It omits cluster-specific code, but
+keeps the control flow you need in production.</p>
+<pre class="astro-code github-dark" style="background-color:#24292e;color:#e1e4e8;overflow-x:auto" tabindex="0" data-language="python"><code><span class="line"><span style="color:#F97583">class</span><span style="color:#B392F0"> TuningController</span><span style="color:#E1E4E8">:</span></span>
+<span class="line"><span style="color:#F97583">    def</span><span style="color:#79B8FF"> __init__</span><span style="color:#E1E4E8">(self, scheduler, searcher, workers):</span></span>
+<span class="line"><span style="color:#79B8FF">        self</span><span style="color:#E1E4E8">.scheduler </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> scheduler</span></span>
+<span class="line"><span style="color:#79B8FF">        self</span><span style="color:#E1E4E8">.searcher </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> searcher</span></span>
+<span class="line"><span style="color:#79B8FF">        self</span><span style="color:#E1E4E8">.workers </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> workers</span></span>
+<span class="line"><span style="color:#79B8FF">        self</span><span style="color:#E1E4E8">.live_trials </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> {}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">    def</span><span style="color:#B392F0"> launch_trial</span><span style="color:#E1E4E8">(self, worker):</span></span>
+<span class="line"><span style="color:#E1E4E8">        config </span><span style="color:#F97583">=</span><span style="color:#79B8FF"> self</span><span style="color:#E1E4E8">.searcher.sample()</span></span>
+<span class="line"><span style="color:#E1E4E8">        trial_id </span><span style="color:#F97583">=</span><span style="color:#79B8FF"> self</span><span style="color:#E1E4E8">.searcher.new_trial_id()</span></span>
+<span class="line"><span style="color:#79B8FF">        self</span><span style="color:#E1E4E8">.scheduler.add_trial(trial_id, config)</span></span>
+<span class="line"><span style="color:#79B8FF">        self</span><span style="color:#E1E4E8">.live_trials[trial_id] </span><span style="color:#F97583">=</span><span style="color:#E1E4E8"> worker</span></span>
+<span class="line"><span style="color:#E1E4E8">        worker.start(trial_id, config)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">    def</span><span style="color:#B392F0"> run</span><span style="color:#E1E4E8">(self):</span></span>
+<span class="line"><span style="color:#F97583">        for</span><span style="color:#E1E4E8"> worker </span><span style="color:#F97583">in</span><span style="color:#79B8FF"> self</span><span style="color:#E1E4E8">.workers.free():</span></span>
+<span class="line"><span style="color:#79B8FF">            self</span><span style="color:#E1E4E8">.launch_trial(worker)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">        while</span><span style="color:#F97583"> not</span><span style="color:#79B8FF"> self</span><span style="color:#E1E4E8">.done():</span></span>
+<span class="line"><span style="color:#E1E4E8">            event </span><span style="color:#F97583">=</span><span style="color:#79B8FF"> self</span><span style="color:#E1E4E8">.wait_for_event()</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">            if</span><span style="color:#E1E4E8"> event.kind </span><span style="color:#F97583">==</span><span style="color:#9ECBFF"> &quot;metric&quot;</span><span style="color:#E1E4E8">:</span></span>
+<span class="line"><span style="color:#E1E4E8">                decision </span><span style="color:#F97583">=</span><span style="color:#79B8FF"> self</span><span style="color:#E1E4E8">.scheduler.on_result(</span></span>
+<span class="line"><span style="color:#FFAB70">                    trial_id</span><span style="color:#F97583">=</span><span style="color:#E1E4E8">event.trial_id,</span></span>
+<span class="line"><span style="color:#FFAB70">                    resource</span><span style="color:#F97583">=</span><span style="color:#E1E4E8">event.resource,</span></span>
+<span class="line"><span style="color:#FFAB70">                    metric</span><span style="color:#F97583">=</span><span style="color:#E1E4E8">event.metric,</span></span>
+<span class="line"><span style="color:#E1E4E8">                )</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">                if</span><span style="color:#E1E4E8"> decision </span><span style="color:#F97583">in</span><span style="color:#E1E4E8"> {Decision.</span><span style="color:#79B8FF">STOP</span><span style="color:#E1E4E8">, Decision.</span><span style="color:#79B8FF">COMPLETE</span><span style="color:#E1E4E8">}:</span></span>
+<span class="line"><span style="color:#E1E4E8">                    worker </span><span style="color:#F97583">=</span><span style="color:#79B8FF"> self</span><span style="color:#E1E4E8">.live_trials.pop(event.trial_id)</span></span>
+<span class="line"><span style="color:#E1E4E8">                    worker.stop()</span></span>
+<span class="line"><span style="color:#F97583">                    if</span><span style="color:#79B8FF"> self</span><span style="color:#E1E4E8">.searcher.has_more():</span></span>
+<span class="line"><span style="color:#79B8FF">                        self</span><span style="color:#E1E4E8">.launch_trial(worker)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#F97583">            elif</span><span style="color:#E1E4E8"> event.kind </span><span style="color:#F97583">==</span><span style="color:#9ECBFF"> &quot;error&quot;</span><span style="color:#E1E4E8">:</span></span>
+<span class="line"><span style="color:#79B8FF">                self</span><span style="color:#E1E4E8">.scheduler.on_trial_error(event.trial_id, event.reason)</span></span>
+<span class="line"><span style="color:#E1E4E8">                worker </span><span style="color:#F97583">=</span><span style="color:#79B8FF"> self</span><span style="color:#E1E4E8">.live_trials.pop(event.trial_id)</span></span>
+<span class="line"><span style="color:#F97583">                if</span><span style="color:#79B8FF"> self</span><span style="color:#E1E4E8">.searcher.has_more():</span></span>
+<span class="line"><span style="color:#79B8FF">                    self</span><span style="color:#E1E4E8">.launch_trial(worker)</span></span></code></pre>
+<p>The scheduler should not know about GPUs, process IDs, Docker containers, or
+Slurm jobs. Keep ASHA as a resource-allocation component. Put infrastructure in
+the controller.</p>
+<hr/>
+<h2 id="19-when-asha-works-well">19. When ASHA Works Well</h2>
+<p>ASHA is a strong fit when:</p>
+<ul>
+<li>training curves are somewhat predictive early</li>
+<li>many configurations are clearly bad</li>
+<li>trials have variable duration</li>
+<li>you have multiple workers</li>
+<li>checkpointing is expensive or unnecessary</li>
+<li>random search is a reasonable sampler</li>
+<li>your objective is available at intermediate resources</li>
+</ul>
+<p>Examples:</p>
+<ul>
+<li>deep learning hyperparameter tuning</li>
+<li>augmentation strength search</li>
+<li>optimizer and scheduler search</li>
+<li>model-size search within one architecture family</li>
+<li>reinforcement learning with frequent evaluation, if noise is controlled</li>
+</ul>
+<hr/>
+<h2 id="20-when-asha-is-a-poor-fit">20. When ASHA Is a Poor Fit</h2>
+<p>ASHA is risky when:</p>
+<ul>
+<li>early metrics are uncorrelated with final metrics</li>
+<li>late bloomers are common</li>
+<li>evaluation is very noisy</li>
+<li>training cannot be meaningfully interrupted</li>
+<li>every trial is cheap enough to fully train</li>
+<li>the objective only exists at the end</li>
+<li>the search space contains very different training dynamics</li>
+</ul>
+<p>In these cases, consider:</p>
+<ul>
+<li>random search with full training</li>
+<li>Bayesian optimization</li>
+<li>Hyperband with conservative brackets</li>
+<li>PBT for schedule-heavy problems</li>
+<li>manual narrowing of the search space</li>
+</ul>
+<hr/>
+<h2 id="21-final-checklist">21. Final Checklist</h2>
+<p>Before trusting an ASHA run:</p>
+<ul class="contains-task-list">
+<li class="task-list-item"><input type="checkbox" disabled/> Define the resource unit clearly.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Confirm <code>max_t</code> matches the horizon you care about.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Set <code>grace_period</code> after warmup and early instability.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Choose <code>eta</code> based on objective noise.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Keep metrics separated by rung.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Test metric direction.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Handle delayed reports that cross multiple rungs.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Add deterministic tie-breaking.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Track failed trials separately.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Avoid comparing trials with incompatible resource definitions.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Print rung tables.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Save every trial config, metric, rung, and decision.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Re-run top configurations with multiple seeds if the metric is noisy.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Compare against random search under equal budget.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Check worker utilization.</li>
+<li class="task-list-item"><input type="checkbox" disabled/> Verify the selected config is actually used in final training.</li>
+</ul>
+<p>That last point is not cosmetic. A common failure is to tune one set of
+parameters, then accidentally launch final training with different defaults.
+ASHA only helps if the winning configuration is faithfully replayed.</p>  </div> <div class="article-end" aria-hidden="true" data-astro-cid-gjtny2mx><span data-astro-cid-gjtny2mx>· · ·</span></div> <div class="article-actions" data-astro-cid-gjtny2mx> <button class="share-btn" id="share-btn" type="button" aria-label="Share this article" data-astro-cid-gjtny2mx> <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" data-astro-cid-gjtny2mx><circle cx="18" cy="5" r="3" data-astro-cid-gjtny2mx></circle><circle cx="6" cy="12" r="3" data-astro-cid-gjtny2mx></circle><circle cx="18" cy="19" r="3" data-astro-cid-gjtny2mx></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49" data-astro-cid-gjtny2mx></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" data-astro-cid-gjtny2mx></line></svg>
+Share this note
+</button> <a class="back-link" href="/blog/" data-astro-cid-gjtny2mx> <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" data-astro-cid-gjtny2mx><path d="M13 8H3M8 3 3 8l5 5" data-astro-cid-gjtny2mx></path></svg>
+Back to Blog </a> </div> <aside class="author-card" aria-label="About the author" data-astro-cid-gjtny2mx> <strong data-astro-cid-gjtny2mx>Arman Asgharpoor</strong> <p data-astro-cid-gjtny2mx>Designing production AI systems, extraction pipelines, evaluation frameworks, and infrastructure for real-world deployment.</p> </aside> </div> <script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"ASHA Hyperparameter Tuning: A Practical Tutorial for Engineers","description":"A practical guide to the Asynchronous Successive Halving Algorithm for hyperparameter tuning, with rung schedules, promotion logic, worker behavior, failure modes, and production implementation patterns.","datePublished":"2026-06-04T00:00:00.000Z","dateModified":"2026-06-04T00:00:00.000Z","author":{"@type":"Person","name":"Arman Asgharpoor","jobTitle":"AI Systems Engineer","description":"Designing production AI systems, extraction pipelines, evaluation frameworks, and infrastructure for real-world deployment.","sameAs":["https://github.com/GinkgoQ","https://www.linkedin.com/company/GinkgoQ","https://huggingface.co/GinkgoQ"]},"publisher":{"@type":"Organization","name":"GinkgoQ","logo":{"@type":"ImageObject","url":"https://ginkgoq.github.io/favicon.svg"}},"image":["https://ginkgoq.github.io//images/og-default.png"],"mainEntityOfPage":{"@type":"WebPage","@id":"https://ginkgoq.github.io//blog/asha_tutorial/"}}</script> <aside class="toc" aria-label="Table of contents" data-astro-cid-vaks4sea> <h2 data-astro-cid-vaks4sea>On this page</h2> <ol data-astro-cid-vaks4sea> <li class="depth-2" data-astro-cid-vaks4sea> <a href="#1-the-problem-asha-solves" data-astro-cid-vaks4sea>1. The Problem ASHA Solves</a> </li><li class="depth-2" data-astro-cid-vaks4sea> <a href="#2-core-intuition" data-astro-cid-vaks4sea>2. Core Intuition</a> </li><li class="depth-2" data-astro-cid-vaks4sea> <a href="#3-vocabulary" data-astro-cid-vaks4sea>3. Vocabulary</a> </li><li class="depth-3" data-astro-cid-vaks4sea> <a href="#trial" data-astro-cid-vaks4sea>Trial</a> </li><li class="depth-3" data-astro-cid-vaks4sea> <a href="#resource" data-astro-cid-vaks4sea>Resource</a> </li><li class="depth-3" data-astro-cid-vaks4sea> <a href="#rung" data-astro-cid-vaks4sea>Rung</a> </li><li class="depth-3" data-astro-cid-vaks4sea> <a href="#promotion" data-astro-cid-vaks4sea>Promotion</a> </li><li class="depth-3" data-astro-cid-vaks4sea> <a href="#reduction-factor" data-astro-cid-vaks4sea>Reduction Factor</a> </li><li class="depth-3" data-astro-cid-vaks4sea> <a href="#grace-period" data-astro-cid-vaks4sea>Grace Period</a> </li><li class="depth-3" data-astro-cid-vaks4sea> <a href="#max-resource" data-astro-cid-vaks4sea>Max Resource</a> </li><li class="depth-3" data-astro-cid-vaks4sea> <a href="#bracket" data-astro-cid-vaks4sea>Bracket</a> </li><li class="depth-2" data-astro-cid-vaks4sea> <a href="#4-successive-halving-before-asha" data-astro-cid-vaks4sea>4. Successive Halving Before ASHA</a> </li><li class="depth-2" data-astro-cid-vaks4sea> <a href="#5-asha-step-by-step" data-astro-cid-vaks4sea>5. ASHA Step by Step</a> </li><li class="depth-3" data-astro-cid-vaks4sea> <a href="#rung-table" data-astro-cid-vaks4sea>Rung Table</a> </li><li class="depth-2" data-astro-cid-vaks4sea> <a href="#6-core-decision-logic" data-astro-cid-vaks4sea>6. Core Decision Logic</a> </li><li class="depth-3" data-astro-cid-vaks4sea> <a href="#practical-detail-minimum-population-per-rung" data-astro-cid-vaks4sea>Practical Detail: Minimum Population Per Rung</a> </li><li class="depth-2" data-astro-cid-vaks4sea> <a href="#7-asha-vs-hyperband" data-astro-cid-vaks4sea>7. ASHA vs Hyperband</a> </li><li class="depth-2" data-astro-cid-vaks4sea> <a href="#8-building-asha-from-scratch" data-astro-cid-vaks4sea>8. Building ASHA From Scratch</a> </li><li class="depth-3" data-astro-cid-vaks4sea> <a href="#data-structures" data-astro-cid-vaks4sea>Data Structures</a> </li><li class="depth-3" data-astro-cid-vaks4sea> <a href="#scheduler-initialization" data-astro-cid-vaks4sea>Scheduler Initialization</a> </li><li class="depth-3" data-astro-cid-vaks4sea> <a href="#registering-trials" data-astro-cid-vaks4sea>Registering Trials</a> </li><li class="depth-3" data-astro-cid-vaks4sea> <a href="#finding-the-current-rung" data-astro-cid-vaks4sea>Finding the Current Rung</a> </li><li class="depth-3" data-astro-cid-vaks4sea> <a href="#ranking-a-rung" data-astro-cid-vaks4sea>Ranking a Rung</a> </li><li class="depth-3" data-astro-cid-vaks4sea> <a href="#promotion-logic" data-astro-cid-vaks4sea>Promotion Logic</a> </li><li class="depth-3" data-astro-cid-vaks4sea> <a href="#reporting-metrics" data-astro-cid-vaks4sea>Reporting Metrics</a> </li><li class="depth-3" data-astro-cid-vaks4sea> <a href="#failed-trials" data-astro-cid-vaks4sea>Failed Trials</a> </li><li class="depth-2" data-astro-cid-vaks4sea> <a href="#9-scheduler-behavior-with-workers" data-astro-cid-vaks4sea>9. Scheduler Behavior With Workers</a> </li><li class="depth-3" data-astro-cid-vaks4sea> <a href="#stop-based-asha" data-astro-cid-vaks4sea>Stop-Based ASHA</a> </li><li class="depth-3" data-astro-cid-vaks4sea> <a href="#pause-and-promote-asha" data-astro-cid-vaks4sea>Pause-and-Promote ASHA</a> </li><li class="depth-2" data-astro-cid-vaks4sea> <a href="#10-why-these-design-choices-exist" data-astro-cid-vaks4sea>10. Why These Design Choices Exist</a> </li><li class="depth-3" data-astro-cid-vaks4sea> <a href="#rungs-are-geometric" data-astro-cid-vaks4sea>Rungs Are Geometric</a> </li><li class="depth-3" data-astro-cid-vaks4sea> <a href="#promotion-uses-rank-not-absolute-metric" data-astro-cid-vaks4sea>Promotion Uses Rank, Not Absolute Metric</a> </li><li class="depth-3" data-astro-cid-vaks4sea> <a href="#a-grace-period-is-mandatory" data-astro-cid-vaks4sea>A Grace Period Is Mandatory</a> </li><li class="depth-3" data-astro-cid-vaks4sea> <a href="#deterministic-tie-handling-is-not-optional" data-astro-cid-vaks4sea>Deterministic Tie Handling Is Not Optional</a> </li><li class="depth-3" data-astro-cid-vaks4sea> <a href="#failed-trials-should-not-pollute-rungs" data-astro-cid-vaks4sea>Failed Trials Should Not Pollute Rungs</a> </li><li class="depth-2" data-astro-cid-vaks4sea> <a href="#11-handling-noisy-objectives" data-astro-cid-vaks4sea>11. Handling Noisy Objectives</a> </li><li class="depth-3" data-astro-cid-vaks4sea> <a href="#increase-grace-period" data-astro-cid-vaks4sea>Increase Grace Period</a> </li><li class="depth-3" data-astro-cid-vaks4sea> <a href="#reduce-pruning-aggressiveness" data-astro-cid-vaks4sea>Reduce Pruning Aggressiveness</a> </li><li class="depth-3" data-astro-cid-vaks4sea> <a href="#smooth-metrics" data-astro-cid-vaks4sea>Smooth Metrics</a> </li><li class="depth-3" data-astro-cid-vaks4sea> <a href="#use-repeated-seeds-for-finalists" data-astro-cid-vaks4sea>Use Repeated Seeds for Finalists</a> </li><li class="depth-3" data-astro-cid-vaks4sea> <a href="#promote-based-on-conservative-scores" data-astro-cid-vaks4sea>Promote Based on Conservative Scores</a> </li><li class="depth-2" data-astro-cid-vaks4sea> <a href="#12-late-bloomers" data-astro-cid-vaks4sea>12. Late Bloomers</a> </li><li class="depth-2" data-astro-cid-vaks4sea> <a href="#13-choosing-parameters" data-astro-cid-vaks4sea>13. Choosing Parameters</a> </li><li class="depth-3" data-astro-cid-vaks4sea> <a href="#max_t" data-astro-cid-vaks4sea>max_t</a> </li><li class="depth-3" data-astro-cid-vaks4sea> <a href="#grace_period" data-astro-cid-vaks4sea>grace_period</a> </li><li class="depth-3" data-astro-cid-vaks4sea> <a href="#reduction_factor" data-astro-cid-vaks4sea>reduction_factor</a> </li><li class="depth-3" data-astro-cid-vaks4sea> <a href="#parameter-cheat-sheet" data-astro-cid-vaks4sea>Parameter Cheat Sheet</a> </li><li class="depth-3" data-astro-cid-vaks4sea> <a href="#number-of-initial-trials" data-astro-cid-vaks4sea>Number of Initial Trials</a> </li><li class="depth-2" data-astro-cid-vaks4sea> <a href="#14-comparison-with-other-tuning-methods" data-astro-cid-vaks4sea>14. Comparison With Other Tuning Methods</a> </li><li class="depth-2" data-astro-cid-vaks4sea> <a href="#15-common-implementation-bugs" data-astro-cid-vaks4sea>15. Common Implementation Bugs</a> </li><li class="depth-3" data-astro-cid-vaks4sea> <a href="#bug-promoting-the-first-trial-at-every-rung" data-astro-cid-vaks4sea>Bug: Promoting the First Trial at Every Rung</a> </li><li class="depth-3" data-astro-cid-vaks4sea> <a href="#bug-comparing-metrics-across-different-resources" data-astro-cid-vaks4sea>Bug: Comparing Metrics Across Different Resources</a> </li><li class="depth-3" data-astro-cid-vaks4sea> <a href="#bug-wrong-metric-direction" data-astro-cid-vaks4sea>Bug: Wrong Metric Direction</a> </li><li class="depth-3" data-astro-cid-vaks4sea> <a href="#bug-rung-skipping-from-delayed-reports" data-astro-cid-vaks4sea>Bug: Rung Skipping From Delayed Reports</a> </li><li class="depth-3" data-astro-cid-vaks4sea> <a href="#bug-no-deterministic-tie-break" data-astro-cid-vaks4sea>Bug: No Deterministic Tie Break</a> </li><li class="depth-3" data-astro-cid-vaks4sea> <a href="#bug-failed-trials-treated-as-normal-metrics" data-astro-cid-vaks4sea>Bug: Failed Trials Treated as Normal Metrics</a> </li><li class="depth-3" data-astro-cid-vaks4sea> <a href="#bug-resource-is-not-comparable" data-astro-cid-vaks4sea>Bug: Resource Is Not Comparable</a> </li><li class="depth-3" data-astro-cid-vaks4sea> <a href="#bug-validation-is-too-sparse" data-astro-cid-vaks4sea>Bug: Validation Is Too Sparse</a> </li><li class="depth-2" data-astro-cid-vaks4sea> <a href="#16-debugging-asha" data-astro-cid-vaks4sea>16. Debugging ASHA</a> </li><li class="depth-3" data-astro-cid-vaks4sea> <a href="#checks-worth-automating" data-astro-cid-vaks4sea>Checks Worth Automating</a> </li><li class="depth-3" data-astro-cid-vaks4sea> <a href="#plot-survival-curves" data-astro-cid-vaks4sea>Plot Survival Curves</a> </li><li class="depth-3" data-astro-cid-vaks4sea> <a href="#compare-against-random-search" data-astro-cid-vaks4sea>Compare Against Random Search</a> </li><li class="depth-2" data-astro-cid-vaks4sea> <a href="#17-engineering-notes-for-real-systems" data-astro-cid-vaks4sea>17. Engineering Notes for Real Systems</a> </li><li class="depth-3" data-astro-cid-vaks4sea> <a href="#checkpointing" data-astro-cid-vaks4sea>Checkpointing</a> </li><li class="depth-3" data-astro-cid-vaks4sea> <a href="#worker-utilization" data-astro-cid-vaks4sea>Worker Utilization</a> </li><li class="depth-3" data-astro-cid-vaks4sea> <a href="#trial-duration-variance" data-astro-cid-vaks4sea>Trial Duration Variance</a> </li><li class="depth-3" data-astro-cid-vaks4sea> <a href="#search-space-design" data-astro-cid-vaks4sea>Search Space Design</a> </li><li class="depth-2" data-astro-cid-vaks4sea> <a href="#18-a-more-realistic-scheduler-skeleton" data-astro-cid-vaks4sea>18. A More Realistic Scheduler Skeleton</a> </li><li class="depth-2" data-astro-cid-vaks4sea> <a href="#19-when-asha-works-well" data-astro-cid-vaks4sea>19. When ASHA Works Well</a> </li><li class="depth-2" data-astro-cid-vaks4sea> <a href="#20-when-asha-is-a-poor-fit" data-astro-cid-vaks4sea>20. When ASHA Is a Poor Fit</a> </li><li class="depth-2" data-astro-cid-vaks4sea> <a href="#21-final-checklist" data-astro-cid-vaks4sea>21. Final Checklist</a> </li> </ol> </aside> </article>  </main> <footer class="site-footer" role="contentinfo" aria-label="Site footer" data-astro-cid-sz7xmlte> <div class="container" data-astro-cid-sz7xmlte> <div class="footer-inner" data-astro-cid-sz7xmlte> <div class="footer-brand" data-astro-cid-sz7xmlte> <a class="footer-brand-link" href="/" aria-label="GinkgoQ home" data-astro-cid-sz7xmlte> <span class="brand-mark" aria-hidden="true" data-astro-cid-sz7xmlte> <img class="brand-logo" src="/favicon.svg" alt="GinkgoQ mark" data-astro-cid-sz7xmlte> </span> <span class="brand-word" aria-label="GINKGOQ"> <span aria-hidden="true">G</span><span aria-hidden="true">I</span><span aria-hidden="true">N</span><span aria-hidden="true">K</span><span aria-hidden="true">G</span><span aria-hidden="true">O</span><span class="brand-q" aria-hidden="true">Q</span> </span> </a> <p class="footer-brand-desc" data-astro-cid-sz7xmlte>Technical writing and engineering insights for building production AI systems. We share what we learn about extraction, evaluation, and real-world deployment.</p> <div class="footer-social" aria-label="Social links" data-astro-cid-sz7xmlte> <a class="footer-social-link" href="https://github.com/GinkgoQ" target="_blank" rel="noopener" aria-label="GitHub" data-astro-cid-sz7xmlte> <span class="footer-social-icon" data-astro-cid-sz7xmlte>
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true">
+        <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0 1 12 6.844a9.59 9.59 0 0 1 2.504.337c1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.02 10.02 0 0 0 22 12.017C22 6.484 17.522 2 12 2Z" />
+      </svg>
+    </span> <span class="sr-only" data-astro-cid-sz7xmlte>GitHub</span> </a><a class="footer-social-link" href="https://twitter.com/GinkgoQAI" target="_blank" rel="noopener" aria-label="X / Twitter" data-astro-cid-sz7xmlte> <span class="footer-social-icon" data-astro-cid-sz7xmlte>
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true">
+        <path d="M22.46 6c-.77.35-1.6.59-2.47.7a4.3 4.3 0 0 0 1.88-2.38 8.59 8.59 0 0 1-2.73 1.04 4.28 4.28 0 0 0-7.29 3.9A12.15 12.15 0 0 1 3.15 4.7a4.28 4.28 0 0 0 1.32 5.72 4.23 4.23 0 0 1-1.94-.54v.05a4.28 4.28 0 0 0 3.43 4.2 4.28 4.28 0 0 1-1.93.07 4.28 4.28 0 0 0 3.99 2.97A8.58 8.58 0 0 1 2 19.54a12.1 12.1 0 0 0 6.56 1.92c7.88 0 12.2-6.53 12.2-12.2 0-.19 0-.37-.01-.56A8.7 8.7 0 0 0 24 5.56a8.45 8.45 0 0 1-2.54.7z" />
+      </svg>
+    </span> <span class="sr-only" data-astro-cid-sz7xmlte>X / Twitter</span> </a><a class="footer-social-link" href="mailto:ai-team@ginkgoq.com" aria-label="Email" data-astro-cid-sz7xmlte> <span class="footer-social-icon" data-astro-cid-sz7xmlte>
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <rect x="3" y="5" width="18" height="14" rx="2" />
+        <path d="M3 7l9 6 9-6" />
+      </svg>
+    </span> <span class="sr-only" data-astro-cid-sz7xmlte>Email</span> </a> </div> </div> <div class="footer-col" data-astro-cid-sz7xmlte> <span class="footer-col-heading" data-astro-cid-sz7xmlte>Navigate</span> <ul class="footer-nav-list" data-astro-cid-sz7xmlte> <li data-astro-cid-sz7xmlte><a href="/start-here/" data-astro-cid-sz7xmlte>Start here</a></li><li data-astro-cid-sz7xmlte><a href="/blog/" data-astro-cid-sz7xmlte>Blog</a></li><li data-astro-cid-sz7xmlte><a href="/research-notes/" data-astro-cid-sz7xmlte>Research Notes</a></li><li data-astro-cid-sz7xmlte><a href="/roadmap/" data-astro-cid-sz7xmlte>Roadmap</a></li> </ul> </div> <div class="footer-col" data-astro-cid-sz7xmlte> <span class="footer-col-heading" style="visibility: hidden;" data-astro-cid-sz7xmlte>Navigate</span> <ul class="footer-nav-list" data-astro-cid-sz7xmlte> <li data-astro-cid-sz7xmlte><a href="/about/" data-astro-cid-sz7xmlte>About</a></li><li data-astro-cid-sz7xmlte><a href="/rss.xml" data-astro-cid-sz7xmlte>RSS</a></li><li data-astro-cid-sz7xmlte><a href="mailto:ai-team@ginkgoq.com" data-astro-cid-sz7xmlte>Contact</a></li> </ul> </div> <div class="footer-col" data-astro-cid-sz7xmlte> <span class="footer-col-heading" data-astro-cid-sz7xmlte>Topics</span> <div class="footer-tag-cloud" data-astro-cid-sz7xmlte> <a href="/blog/?tag=AI%20Systems" data-astro-cid-sz7xmlte>AI Systems</a><a href="/blog/?tag=Production%20Infrastructure" data-astro-cid-sz7xmlte>Production Infrastructure</a><a href="/blog/?tag=Extraction%20%26%20Validation" data-astro-cid-sz7xmlte>Extraction &amp; Validation</a><a href="/blog/?tag=Evaluation%20%26%20Benchmarks" data-astro-cid-sz7xmlte>Evaluation &amp; Benchmarks</a><a href="/blog/?tag=Real-World%20Deployment" data-astro-cid-sz7xmlte>Real-World Deployment</a><a href="/blog/?tag=System%20Architecture" data-astro-cid-sz7xmlte>System Architecture</a><a href="/blog/?tag=Technical%20Analysis" data-astro-cid-sz7xmlte>Technical Analysis</a> </div> </div> </div> <div class="footer-bottom" data-astro-cid-sz7xmlte> <div class="footer-bottom-inner" data-astro-cid-sz7xmlte> <span data-astro-cid-sz7xmlte>© 2026 GinkgoQ. All rights reserved.</span> <div class="footer-bottom-right" data-astro-cid-sz7xmlte> <a href="mailto:ai-team@ginkgoq.com" data-astro-cid-sz7xmlte>ai-team@ginkgoq.com</a> <span class="footer-sep" aria-hidden="true" data-astro-cid-sz7xmlte>·</span> <span data-astro-cid-sz7xmlte>Production AI systems for the real world.</span> </div> </div> </div> </div> </footer> </div> </div> <button class="back-to-top" id="back-to-top" type="button" aria-label="Back to top" data-astro-cid-37fxchfa> <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" data-astro-cid-37fxchfa> <path d="m18 15-6-6-6 6" data-astro-cid-37fxchfa></path> </svg> </button> <script>window.__SEARCH_POSTS__ = [{"title":"ASHA Hyperparameter Tuning: A Practical Tutorial for Engineers","description":"A practical guide to the Asynchronous Successive Halving Algorithm for hyperparameter tuning, with rung schedules, promotion logic, worker behavior, failure modes, and production implementation patterns.","category":"Engineering","date":"2026-06-04T00:00:00.000Z","href":"/blog/asha_tutorial/"},{"title":"Designing Evaluation Frameworks for Production AI Systems","description":"How to build AI evaluation frameworks that test routing, retrieval, tool use, grounding, workflow behavior, cost, latency, and production regressions.","category":"Engineering","date":"2026-06-04T00:00:00.000Z","href":"/blog/designing-evaluation-frameworks-for-production-ai-systems/"},{"title":"Agentic AI Architecture, Part 1: How to Design Reliable AI Agents","description":"A practical guide to agentic AI architecture: what AI agents are, where LLMs fit, and how to design reliable agent systems with state, tools, retrieval, guardrails, and evaluation.","category":"Engineering","date":"2026-06-04T00:00:00.000Z","href":"/blog/guide-to-agentic-ai-architecture-part-1/"},{"title":"Agentic AI Architecture, Part 2: Building Production AI Agent Systems","description":"A production playbook for agentic AI systems: orchestration patterns, multi-agent design, retrieval repair, observability, evaluation, cost control, and implementation structure.","category":"Engineering","date":"2026-06-04T00:00:00.000Z","href":"/blog/guide-to-agentic-ai-architecture-part-2/"},{"title":"Production RAG Architecture Beyond Vector Search","description":"How to design production retrieval systems with evidence targets, hybrid search, source-fit scoring, context packing, retrieval repair, and grounding checks.","category":"Engineering","date":"2026-06-04T00:00:00.000Z","href":"/blog/production-rag-retrieval-architecture-beyond-vector-search/"},{"title":"Why Model Performance Does Not Determine System Reliability","description":"Benchmarks are useful, but production AI reliability depends on retrieval quality, validation, observability, fallback behavior, and evaluation across the full system.","category":"Research Note","date":"2026-05-12T00:00:00.000Z","href":"/research-notes/why-real-world-ai-systems-need-more-than-models/"},{"title":"Building Reliable Extraction Pipelines for Document Understanding","description":"A practical guide to designing document AI pipelines with structured extraction, validation, confidence scoring, provenance, human review, and production observability.","category":"Engineering","date":"2026-05-08T00:00:00.000Z","href":"/blog/building-reliable-ai-pipelines-for-document-understanding/"},{"title":"From RAG to Domain Intelligence","description":"Why retrieval-augmented generation is only the first layer of production AI, and how extraction, validation, provenance, and domain reasoning turn retrieved text into usable intelligence.","category":"Research Note","date":"2026-05-04T00:00:00.000Z","href":"/research-notes/from-rag-to-domain-intelligence/"}];</script> <script src="/scripts/ui.js" defer></script> </body> </html> 

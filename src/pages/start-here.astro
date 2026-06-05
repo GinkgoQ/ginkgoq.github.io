@@ -3,38 +3,39 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 import { siteConfig } from "../config/site.config";
 ---
 
-<BaseLayout title="Start here — GinkgoQ" description="New to GinkgoQ? Learn what we publish, how content is organized, and where to find what you're looking for.">
+<BaseLayout title="Start here — GinkgoQ" description="New to GinkgoQ? Learn how our AI systems writing is organized, where to start reading, and which topics to follow first.">
   <section class="guide-hero container" aria-labelledby="start-here-heading">
     <span class="eyebrow">Getting started</span>
     <h1 id="start-here-heading">Welcome to GinkgoQ</h1>
-    <p class="lead">Technical writing and engineering insights for teams building production AI systems. Learn where to start and how content is organized.</p>
+    <p class="lead">GinkgoQ publishes practical engineering writing for teams building AI systems that need to work outside demos: agents, retrieval, document understanding, evaluation, validation, and production reliability.</p>
   </section>
 
   <section class="guide-body container">
     <div class="guide-grid">
       <div>
         <h2>What we publish</h2>
-        <p>GinkgoQ shares practical knowledge about building AI systems that work in production. Our writing covers extraction pipelines, evaluation frameworks, system architecture, and real-world deployment challenges.</p>
-        <p>We focus on the technical depth needed to move from proof-of-concept to production-grade systems.</p>
+        <p>We write about the engineering layers around modern AI models: orchestration, structured state, retrieval, tool use, extraction, validation, observability, and evaluation.</p>
+        <p>The focus is practical system design. We care less about broad AI commentary and more about the decisions that determine whether an AI workflow can be debugged, audited, improved, and trusted.</p>
       </div>
 
       <div>
         <h2>Where to start</h2>
         <ul class="start-list">
-          <li><strong>Blog</strong> — In-depth guides and case studies on document processing, pipelines, evaluation, and production systems.</li>
-          <li><strong>Research Notes</strong> — Short-form technical analysis on system design, and real-world challenges.</li>
-          <li><strong>Latest posts</strong> — Check the homepage for the most recent insights and updates.</li>
+          <li><strong>Agentic AI architecture</strong> — Start with the two-part guide on reliable AI agents, orchestration, state, tools, retrieval, and evaluation.</li>
+          <li><strong>Document understanding</strong> — Read the extraction pipeline guide if you work with PDFs, contracts, invoices, forms, or domain documents.</li>
+          <li><strong>Research Notes</strong> — Use these for shorter analysis on RAG, domain intelligence, reliability, and evaluation.</li>
+          <li><strong>Latest posts</strong> — Check the homepage for the newest engineering guides and technical notes.</li>
         </ul>
       </div>
 
       <div>
         <h2>Finding what you need</h2>
-        <p>Use the search bar or category filters to find articles on specific topics. Blog posts dive deep into particular problems and solutions. Research Notes offer focused analysis on individual topics. Most articles include references and citations so you can explore further.</p>
+        <p>Use search for topics such as agentic AI, RAG, retrieval, validation, document AI, production reliability, and evaluation. Blog posts are longer implementation guides. Research Notes are shorter technical arguments that clarify one system design problem at a time.</p>
       </div>
 
       <div>
         <h2>Understanding our content</h2>
-        <p>Each article is self-contained and focuses on solving a specific problem or exploring a particular topic. References and citations are included when relevant. Code examples demonstrate practical implementations. You don't need background reading to get value from individual posts.</p>
+        <p>Each article is designed to be useful on its own. When a topic is part of a series, the post will state where it fits. Code examples are intentionally small and architectural; they are meant to clarify system boundaries, not hide the design behind framework-specific boilerplate.</p>
       </div>
     </div>
   </section>

@@ -1,46 +1,271 @@
 ---
-title: "Beyond RAG: building domain intelligence systems"
-description: "Retrieval is just the foundation. Production AI systems need extraction, validation, confidence scoring, and domain reasoning."
+title: "From RAG to Domain Intelligence"
+description: "Why retrieval-augmented generation is only the first layer of production AI, and how extraction, validation, provenance, and domain reasoning turn retrieved text into usable intelligence."
 date: 2026-05-04
 category: "Research Note"
-tags: ["AI Systems", "Architecture", "Production"]
+tags: ["RAG", "Domain Intelligence", "AI Systems", "Production AI"]
 draft: false
 ---
 
-## RAG is not the complete solution
+import Mermaid from "../../components/Mermaid.astro";
 
-Retrieval-Augmented Generation has become the standard architecture for incorporating external knowledge. It does improve factuality and reduce hallucination, but it's fundamentally a retrieval layer—it finds relevant information.
+Retrieval-Augmented Generation made AI systems more useful by connecting language models to external knowledge. It gave teams a practical way to answer questions from documents, policies, manuals, support articles, research papers, and internal knowledge bases.
 
-> RAG retrieves information. It does not understand it, validate it, normalize it, or determine what should happen next.
+But RAG is not the complete system. It is the access layer.
 
-That gap between retrieval and action is where most real-world AI work happens.
+RAG can find relevant information. It does not automatically validate that information, normalize it, resolve contradictions, apply domain rules, or decide what action should happen next.
 
-## The complete pipeline
+That missing layer is domain intelligence.
 
-Production systems need layers beyond retrieval. Each layer adds value:
+<Mermaid
+  title="From retrieval to domain intelligence"
+  chart={`
+flowchart LR
+  RAG[RAG retrieval] --> Evidence[Relevant evidence]
+  Evidence --> Extract[Extraction]
+  Extract --> Normalize[Normalization]
+  Normalize --> Validate[Validation]
+  Validate --> Reason[Domain reasoning]
+  Reason --> Action[Decision or workflow action]
+  Validate --> Provenance[Provenance and confidence]
+  Provenance --> Action
+` }
+/>
 
-**Ingestion** → Bring data into the system, standardize formats, make it searchable
+## RAG retrieves context. Domain intelligence interprets it.
 
-**Retrieval** → Find relevant documents and passages given a query
+A basic RAG workflow looks like this:
 
-**Extraction** → Pull structured values from unstructured text (entities, dates, amounts, relationships)
+```text
+user question
+  -> retrieve relevant chunks
+  -> place chunks in context
+  -> generate answer
+```
 
-**Validation** → Check extracted values against business rules, consistency constraints, and data quality standards
+This works for simple question answering, especially when the answer is directly stated in the retrieved text.
 
-**Reasoning** → Apply domain logic to synthesize decisions from multiple data points
+It becomes weaker when the system must:
 
-**Action** → Convert the result into the decision or output the system is designed to produce
+- compare multiple sources
+- extract structured values
+- resolve conflicting evidence
+- apply business rules
+- decide whether information is missing
+- produce an auditable output
+- trigger a workflow action
 
-Each stage depends on the previous one working correctly. Retrieval without validation wastes time on unverified information. Extraction without reasoning produces disconnected facts instead of insights.
+At that point, retrieval is only one part of the job.
 
-## Domain intelligence: the missing layer
+## The production pipeline has more layers
 
-Domain intelligence is what sits between raw retrieval and business value. It includes:
+A production AI system usually needs several layers after retrieval.
 
-- Entity extraction and normalization (recognizing that "Robert Smith" and "R. Smith" might be the same person)
-- Consistency checking (flagging when retrieved data contradicts itself)
-- Business rule application (enforcing policies specific to your domain)
-- Confidence and uncertainty representation (being explicit about what you don't know)
-- Provenance tracking (knowing where each piece of information came from)
+```text
+ingestion
+  -> indexing
+  -> retrieval
+  -> extraction
+  -> normalization
+  -> validation
+  -> reasoning
+  -> decision or action
+  -> observability
+```
 
-This layer determines whether an AI system is reliable enough to use in production or just a research prototype.
+Each layer changes what the system can do.
+
+| Layer | What it adds |
+| --- | --- |
+| Ingestion | Clean, structured, searchable source material |
+| Retrieval | Candidate evidence relevant to the task |
+| Extraction | Structured facts from unstructured text |
+| Normalization | Comparable values across formats and sources |
+| Validation | Rule checks, consistency checks, and quality gates |
+| Reasoning | Domain-specific interpretation across facts |
+| Action | A workflow output, decision, recommendation, or handoff |
+| Observability | Traceability, auditability, and improvement data |
+
+Without these layers, a system may answer questions fluently while still failing the workflow it was meant to support.
+
+| System maturity | What it can do | Main limitation |
+| --- | --- | --- |
+| Search | Find matching documents | No synthesis or task awareness |
+| Basic RAG | Answer from retrieved text | Weak validation and provenance |
+| Structured RAG | Extract facts from evidence | Limited rule application |
+| Domain intelligence | Validate, reason, and act | Requires domain schemas and evals |
+
+## What domain intelligence includes
+
+Domain intelligence is the layer that turns retrieved text into reliable, task-specific understanding.
+
+It includes:
+
+### Entity extraction and normalization
+
+The system identifies important entities and maps variations to a usable representation.
+
+```text
+"Robert Smith"
+"R. Smith"
+"Bob Smith"
+  -> canonical_person_id: person_184
+```
+
+Normalization matters because downstream systems need stable values, not surface-level text fragments.
+
+### Relationship extraction
+
+Many workflows depend on relationships, not isolated facts.
+
+Examples:
+
+- contract clause -> obligation -> responsible party
+- patient symptom -> duration -> severity
+- invoice line item -> quantity -> unit price -> total
+- policy condition -> exception -> approval path
+
+Retrieval may find the sentence. Domain intelligence extracts the structure.
+
+### Consistency checking
+
+Real corpora contain contradictions.
+
+One policy document may say refunds are available within 30 days. Another may say enterprise customers have a 60-day exception. A good system should not merge those into a vague answer. It should identify which rule applies to the user’s context and surface uncertainty when the evidence is incomplete.
+
+### Rule application
+
+Business rules are often deterministic and should not be hidden inside model prose.
+
+```python
+if customer_tier == "enterprise" and purchase_age_days <= 60:
+    refund_policy = "eligible_for_exception_review"
+elif purchase_age_days <= 30:
+    refund_policy = "eligible"
+else:
+    refund_policy = "not_eligible"
+```
+
+The model can help interpret messy language. The rule engine should own policy logic.
+
+### Confidence and uncertainty
+
+Production systems need to represent uncertainty explicitly.
+
+```json
+{
+  "answer_status": "partial",
+  "supported_claims": ["The standard refund window is 30 days."],
+  "missing_information": ["Customer tier is unknown."],
+  "recommended_next_step": "Ask for account tier or retrieve customer profile."
+}
+```
+
+This is more useful than a confident answer built from incomplete evidence.
+
+### Provenance
+
+Every important claim should be traceable.
+
+The system should know:
+
+- which source supported the claim
+- which section or chunk was used
+- whether the source was current
+- whether other sources disagreed
+- which transformation produced the final value
+
+Provenance is what makes AI output reviewable.
+
+## Why top-k retrieval is not enough
+
+Many early RAG systems use a fixed retrieval pattern:
+
+```text
+embed user question
+  -> retrieve top 5 chunks
+  -> answer from those chunks
+```
+
+That is simple, but it assumes one query and one set of chunks can cover the entire task.
+
+More reliable systems decompose the task into evidence targets:
+
+```json
+{
+  "targets": [
+    {
+      "target_id": "standard_policy",
+      "query": "standard refund eligibility window",
+      "must_cover": true
+    },
+    {
+      "target_id": "enterprise_exception",
+      "query": "enterprise refund exception review",
+      "must_cover": true
+    },
+    {
+      "target_id": "customer_profile",
+      "query": "customer tier and purchase date",
+      "must_cover": true
+    }
+  ]
+}
+```
+
+Retrieval then becomes target-specific. The system can evaluate whether each required target is supported, partial, or missing.
+
+That is the difference between “we retrieved some relevant text” and “we have enough evidence to answer this question.”
+
+## A domain intelligence architecture
+
+A useful architecture looks like this:
+
+```text
+User request
+  -> intent and workflow router
+  -> evidence target planner
+  -> shared retrieval engine
+  -> extraction and normalization
+  -> validation and rule checks
+  -> confidence and provenance builder
+  -> final answer or workflow action
+  -> trace and evaluation log
+```
+
+The model helps with language understanding, planning, and synthesis. The system owns state, validation, evidence coverage, and action boundaries.
+
+## Where this matters most
+
+Domain intelligence matters when the answer affects a decision.
+
+Examples:
+
+- healthcare document review
+- contract risk analysis
+- insurance claim processing
+- financial document extraction
+- technical support automation
+- compliance review
+- enterprise search over policy and procedure
+- research synthesis across many sources
+
+In these settings, a useful AI system must do more than quote a relevant paragraph. It must explain what the paragraph means for the task.
+
+## The practical standard
+
+A system has moved beyond basic RAG when it can answer these questions:
+
+```text
+What evidence did we retrieve?
+What facts did we extract?
+How were values normalized?
+Which rules were applied?
+What is missing or uncertain?
+Which claims are supported?
+What action should happen next?
+```
+
+RAG gives the model access to information. Domain intelligence makes that information operational.
+
+The future of production AI is not just better retrieval. It is better interpretation after retrieval.
